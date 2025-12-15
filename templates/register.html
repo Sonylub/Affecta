@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация - Стабил{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <h2 class="mt-6 text-3xl font-bold text-gray-900 dark:text-white">
+                Создайте аккаунт
+            </h2>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                Присоединяйтесь к Стабил и начните заботиться о своем психоэмоциональном здоровье
+            </p>
+        </div>
+        
+        <form class="mt-8 space-y-6 bg-white dark:bg-gray-800 p-8 rounded-xl card-shadow" method="POST" action="{{ url_for('register') }}">
+            <div class="space-y-4">
+                <!-- Имя пользователя -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Имя пользователя
+                    </label>
+                    <div class="mt-1">
+                        <input id="username" name="username" type="text" required
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="Выберите имя пользователя">
+                    </div>
+                </div>
+                
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Email адрес
+                    </label>
+                    <div class="mt-1">
+                        <input id="email" name="email" type="email" required
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="your@email.com">
+                    </div>
+                </div>
+                
+                <!-- Пароль -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Пароль
+                    </label>
+                    <div class="mt-1 relative">
+                        <input id="password" name="password" type="password" required
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="Минимум 6 символов">
+                        <button type="button" onclick="togglePassword('password')" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Подтверждение пароля -->
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Подтвердите пароль
+                    </label>
+                    <div class="mt-1 relative">
+                        <input id="confirm_password" name="confirm_password" type="password" required
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                               placeholder="Повторите пароль">
+                        <button type="button" onclick="togglePassword('confirm_password')" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Соглашение -->
+            <div class="flex items-start">
+                <div class="flex items-center h-5">
+                    <input id="agree" name="agree" type="checkbox" required
+                           class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                </div>
+                <div class="ml-3 text-sm">
+                    <label for="agree" class="font-medium text-gray-700 dark:text-gray-300">
+                        Я согласен с 
+                        <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">
+                            условиями использования
+                        </a>
+                        и 
+                        <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">
+                            политикой конфиденциальности
+                        </a>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Кнопка регистрации -->
+            <div>
+                <button type="submit" 
+                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-blue-500 group-hover:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </span>
+                    Создать аккаунт
+                </button>
+            </div>
+            
+            <!-- Ссылка на вход -->
+            <div class="text-center">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Уже есть аккаунт?
+                    <a href="{{ url_for('login') }}" 
+                       class="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300">
+                        Войти
+                    </a>
+                </p>
+            </div>
+        </form>
+        
+        <!-- Информация о безопасности -->
+        <div class="mt-8 text-center">
+            <div class="inline-flex items-center text-sm text-gray-500 dark:text-gray-400">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                Ваши данные защищены и никогда не передаются третьим лицам
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const button = input.nextElementSibling;
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.879 6.879M9.878 9.878l-2.828 2.828"></path>
+                </svg>
+            `;
+        } else {
+            input.type = 'password';
+            button.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+            `;
+        }
+    }
+    
+    // Валидация формы
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+        
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Пароль должен содержать минимум 6 символов');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Пароли не совпадают');
+            return;
+        }
+        
+        if (!document.getElementById('agree').checked) {
+            e.preventDefault();
+            alert('Необходимо согласие с условиями использования');
+            return;
+        }
+    });
+</script>
+{% endblock %}

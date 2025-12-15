@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+
+{% block title %}Дневник - Стабил{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Заголовок -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                Дневник мыслей и наблюдений
+            </h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">
+                Записывайте свои мысли, чувства и наблюдения
+            </p>
+        </div>
+        
+        <button onclick="openNewNoteModal()" 
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Новая запись
+        </button>
+    </div>
+    
+    <!-- Фильтры -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 card-shadow mb-6">
+        <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Тип записи:
+                </label>
+                <select id="noteTypeFilter" onchange="filterNotes()" 
+                        class="block w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Все</option>
+                    <option value="thought">Мысли</option>
+                    <option value="cbt">КПТ</option>
+                    <option value="dbt">ДБТ</option>
+                    <option value="act">ACT</option>
+                    <option value="ipsrt">IPSRT</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Период:
+                </label>
+                <select id="periodFilter" onchange="filterNotes()" 
+                        class="block w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="all">Все время</option>
+                    <option value="7">7 дней</option>
+                    <option value="30">30 дней</option>
+                    <option value="90">90 дней</option>
+                </select>
+            </div>
+            
+            <div class="flex-1">
+                <input type="text" id="searchFilter" placeholder="Поиск по записям..." 
+                       class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                       onkeyup="filterNotes()">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Статистика -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow text-center">
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
+                {{ notes|length }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Всего записей
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow text-center">
+            <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
+                {{ notes|selectattr('note_type', 'equalto', 'cbt')|list|length }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                КПТ записей
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow text-center">
+            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
+                {{ notes|selectattr('note_type', 'equalto', 'dbt')|list|length }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                ДБТ записей
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl card-shadow text-center">
+            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">
+                {{ notes|selectattr('note_type', 'equalto', 'thought')|list|length }}
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Записей мыслей
+            </div>
+        </div>
+    </div>
+    
+    <!-- Записи -->
+    <div id="notesContainer" class="space-y-4">
+        {% if notes %}
+            {% for note in notes %}
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 card-shadow note-item" 
+                 data-type="{{ note.note_type }}" 
+                 data-date="{{ note.created_at.strftime('%Y-%m-%d') }}">
+                
+                <!-- Заголовок записи -->
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                             style="background-color: 
+                                    {% if note.note_type == 'cbt' %}#3B82F6
+                                    {% elif note.note_type == 'dbt' %}#10B981
+                                    {% elif note.note_type == 'act' %}#8B5CF6
+                                    {% elif note.note_type == 'ipsrt' %}#F59E0B
+                                    {% else %}#6B7280{% endif %}">
+                            {% if note.note_type == 'cbt' %}К{% endif %}
+                            {% if note.note_type == 'dbt' %}Д{% endif %}
+                            {% if note.note_type == 'act' %}A{% endif %}
+                            {% if note.note_type == 'ipsrt' %}I{% endif %}
+                            {% if note.note_type == 'thought' %}М{% endif %}
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-semibold text-gray-900 dark:text-white">
+                                {% if note.title %}
+                                    {{ note.title }}
+                                {% else %}
+                                    {% if note.note_type == 'cbt' %}КПТ запись{% endif %}
+                                    {% if note.note_type == 'dbt' %}ДБТ запись{% endif %}
+                                    {% if note.note_type == 'act' %}ACT запись{% endif %}
+                                    {% if note.note_type == 'ipsrt' %}IPSRT запись{% endif %}
+                                    {% if note.note_type == 'thought' %}Запись мыслей{% endif %}
+                                {% endif %}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ note.created_at.strftime('%d.%m.%Y %H:%M') }}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                               {% if note.note_type == 'cbt' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}
+                               {% if note.note_type == 'dbt' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300{% endif %}
+                               {% if note.note_type == 'act' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300{% endif %}
+                               {% if note.note_type == 'ipsrt' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}
+                               {% if note.note_type == 'thought' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                            {% if note.note_type == 'cbt' %}КПТ{% endif %}
+                            {% if note.note_type == 'dbt' %}ДБТ{% endif %}
+                            {% if note.note_type == 'act' %}ACT{% endif %}
+                            {% if note.note_type == 'ipsrt' %}IPSRT{% endif %}
+                            {% if note.note_type == 'thought' %}Мысли{% endif %}
+                        </span>
+                        
+                        <button onclick="deleteNote({{ note.id }})" 
+                                class="text-gray-400 hover:text-red-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Содержание записи -->
+                <div class="prose dark:prose-dark max-w-none">
+                    {% if note.content %}
+                        <p class="text-gray-700 dark:text-gray-300 mb-4">{{ note.content }}</p>
+                    {% endif %}
+                    
+                    {% if note.situation %}
+                        <div class="mb-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-1">Ситуация:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ note.situation }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if note.automatic_thoughts %}
+                        <div class="mb-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-1">Автоматические мысли:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ note.automatic_thoughts }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if note.emotions %}
+                        <div class="mb-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-1">Эмоции:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ note.emotions }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if note.cognitive_distortions %}
+                        <div class="mb-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-1">Когнитивные искажения:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ note.cognitive_distortions }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if note.rational_response %}
+                        <div class="mb-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-1">Рациональный ответ:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ note.rational_response }}</p>
+                        </div>
+                    {% endif %}
+                    
+                    {% if note.skill_used %}
+                        <div class="mb-3">
+                            <h4 class="font-medium text-gray-900 dark:text-white mb-1">Использованный навык:</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ note.skill_used }}</p>
+                            {% if note.effectiveness %}
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Эффективность: {{ note.effectiveness }}/10
+                                </p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Пустое состояние -->
+            <div class="text-center py-12">
+                <div class="text-6xl mb-4">📝</div>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                    У вас еще нет записей
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                    Начните вести дневник, чтобы отслеживать свои мысли, 
+                    чувства и прогресс в терапии.
+                </p>
+                <button onclick="openNewNoteModal()" 
+                        class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Создать первую запись
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальное окно новой записи -->
+<div id="newNoteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+                Новая запись
+            </h3>
+            <button onclick="closeNewNoteModal()" 
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <form id="newNoteForm" onsubmit="saveNewNote(event)">
+            <div class="space-y-4">
+                <!-- Тип записи -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Тип записи
+                    </label>
+                    <select name="note_type" onchange="updateNoteForm()" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="thought">Простая запись мыслей</option>
+                        <option value="cbt">КПТ (дневник мыслей)</option>
+                        <option value="dbt">ДБТ (дневник навыков)</option>
+                        <option value="act">ACT (осознанность)</option>
+                        <option value="ipsrt">IPSRT (ритмы)</option>
+                    </select>
+                </div>
+                
+                <!-- Название -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Название (необязательно)
+                    </label>
+                    <input type="text" name="title" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                           placeholder="Краткое название записи">
+                </div>
+                
+                <!-- Основное содержание -->
+                <div id="mainContent">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Содержание
+                    </label>
+                    <textarea name="content" rows="6" 
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              placeholder="Опишите свои мысли, чувства, наблюдения..."></textarea>
+                </div>
+                
+                <!-- Дополнительные поля для КПТ -->
+                <div id="cbtFields" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Ситуация
+                        </label>
+                        <textarea name="situation" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Опишите ситуацию..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Автоматические мысли
+                        </label>
+                        <textarea name="automatic_thoughts" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Что вы себе сказали?"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Эмоции и интенсивность (0-100%)
+                        </label>
+                        <input type="text" name="emotions" 
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="Страх (70%), Грусть (50%)">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Рациональный ответ
+                        </label>
+                        <textarea name="rational_response" rows="3" 
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="Более реалистичная мысль..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Дополнительные поля для ДБТ -->
+                <div id="dbtFields" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Использованный навык
+                        </label>
+                        <select name="skill_used" 
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">Выберите навык...</option>
+                            <option value="observe">Наблюдение</option>
+                            <option value="describe">Описание</option>
+                            <option value="participate">Участие</option>
+                            <option value="opposite-action">Противоположное действие</option>
+                            <option value="tip">TIPP</option>
+                            <option value="self-soothe">Успокоение себя</option>
+                            <option value="dear-man">DEAR MAN</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Эффективность (1-10)
+                        </label>
+                        <input type="range" name="effectiveness" min="1" max="10" value="5" 
+                               class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            <span>1</span>
+                            <span id="effectivenessValue">5</span>
+                            <span>10</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Дополнительные поля для IPSRT -->
+                <div id="ipsrtFields" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Время подъема
+                            </label>
+                            <input type="time" name="wake_time" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Время сна
+                            </label>
+                            <input type="time" name="bed_time" 
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Активности
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="activities" value="work" 
+                                       class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Работа/учеба</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="activities" value="social" 
+                                       class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Социальные взаимодействия</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="activities" value="exercise" 
+                                       class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded">
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Физическая активность</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Кнопки -->
+            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+                <button type="button" onclick="closeNewNoteModal()" 
+                        class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Отмена
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+                    Сохранить запись
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Открытие модального окна новой записи
+    function openNewNoteModal() {
+        document.getElementById('newNoteModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Закрытие модального окна
+    function closeNewNoteModal() {
+        document.getElementById('newNoteModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        document.getElementById('newNoteForm').reset();
+        updateNoteForm();
+    }
+    
+    // Обновление формы в зависимости от типа записи
+    function updateNoteForm() {
+        const noteType = document.querySelector('select[name="note_type"]').value;
+        
+        // Скрываем все дополнительные поля
+        document.getElementById('cbtFields').classList.add('hidden');
+        document.getElementById('dbtFields').classList.add('hidden');
+        document.getElementById('ipsrtFields').classList.add('hidden');
+        
+        // Показываем нужные поля
+        if (noteType === 'cbt') {
+            document.getElementById('cbtFields').classList.remove('hidden');
+        } else if (noteType === 'dbt') {
+            document.getElementById('dbtFields').classList.remove('hidden');
+        } else if (noteType === 'ipsrt') {
+            document.getElementById('ipsrtFields').classList.remove('hidden');
+        }
+    }
+    
+    // Сохранение новой записи
+    function saveNewNote(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Для ДБТ собираем эффективность
+        if (data.note_type === 'dbt') {
+            data.effectiveness = document.querySelector('input[name="effectiveness"]').value;
+        }
+        
+        // Для IPSRT собираем активности
+        if (data.note_type === 'ipsrt') {
+            data.activities = formData.getAll('activities');
+        }
+        
+        // Отправка на сервер
+        fetch('/api/therapy-notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alert('Запись сохранена!');
+                closeNewNoteModal();
+                // Перезагружаем страницу для обновления списка
+                window.location.reload();
+            } else {
+                alert('Ошибка сохранения: ' + result.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка сохранения записи');
+        });
+    }
+    
+    // Фильтрация записей
+    function filterNotes() {
+        const typeFilter = document.getElementById('noteTypeFilter').value;
+        const periodFilter = document.getElementById('periodFilter').value;
+        const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+        
+        const notes = document.querySelectorAll('.note-item');
+        
+        notes.forEach(note => {
+            let show = true;
+            
+            // Фильтр по типу
+            if (typeFilter && note.dataset.type !== typeFilter) {
+                show = false;
+            }
+            
+            // Фильтр по периоду
+            if (periodFilter && periodFilter !== 'all') {
+                const noteDate = new Date(note.dataset.date);
+                const daysAgo = parseInt(periodFilter);
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+                
+                if (noteDate < cutoffDate) {
+                    show = false;
+                }
+            }
+            
+            // Поиск по тексту
+            if (searchFilter) {
+                const noteText = note.textContent.toLowerCase();
+                if (!noteText.includes(searchFilter)) {
+                    show = false;
+                }
+            }
+            
+            // Показать/скрыть запись
+            if (show) {
+                note.style.display = 'block';
+            } else {
+                note.style.display = 'none';
+            }
+        });
+        
+        // Проверка на пустой результат
+        const visibleNotes = document.querySelectorAll('.note-item[style="display: block"], .note-item:not([style])');
+        const emptyMessage = document.getElementById('emptyMessage');
+        
+        if (visibleNotes.length === 0) {
+            if (!emptyMessage) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.id = 'emptyMessage';
+                emptyDiv.className = 'text-center py-12';
+                emptyDiv.innerHTML = `
+                    <div class="text-4xl mb-2">🔍</div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        Записи не найдены
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Попробуйте изменить фильтры поиска
+                    </p>
+                `;
+                document.getElementById('notesContainer').appendChild(emptyDiv);
+            }
+        } else if (emptyMessage) {
+            emptyMessage.remove();
+        }
+    }
+    
+    // Удаление записи
+    function deleteNote(noteId) {
+        if (confirm('Вы уверены, что хотите удалить эту запись?')) {
+            fetch(`/api/therapy-notes/${noteId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    // Удаляем запись из DOM
+                    const noteElement = document.querySelector(`[onclick="deleteNote(${noteId})"]`).closest('.note-item');
+                    noteElement.remove();
+                    
+                    // Обновляем статистику
+                    window.location.reload();
+                } else {
+                    alert('Ошибка удаления');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ошибка удаления записи');
+            });
+        }
+    }
+    
+    // Обработка клавиш
+    document.addEventListener('keydown', function(e) {
+        // Escape - закрыть модальное окно
+        if (e.key === 'Escape') {
+            closeNewNoteModal();
+        }
+        
+        // Ctrl/Cmd + N - новая запись
+        if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+            e.preventDefault();
+            openNewNoteModal();
+        }
+    });
+    
+    // Закрытие модального окна по клику вне
+    document.getElementById('newNoteModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeNewNoteModal();
+        }
+    });
+    
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', function() {
+        updateNoteForm();
+        
+        // Обновление значения эффективности
+        const effectivenessSlider = document.querySelector('input[name="effectiveness"]');
+        if (effectivenessSlider) {
+            effectivenessSlider.addEventListener('input', function() {
+                document.getElementById('effectivenessValue').textContent = this.value;
+            });
+        }
+    });
+</script>
+{% endblock %}
