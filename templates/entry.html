@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Дневная запись - Affecta{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Заголовок и навигация по датам -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="mb-4">
+            <h1 class="text-3xl font-bold text-gray-800">Дневная запись</h1>
+            <p class="text-gray-600 mt-2">
+                Выберите дату, чтобы просмотреть или изменить запись за этот день.
+            </p>
+        </div>
+        <!-- Навигация по датам -->
+        <div class="flex items-center justify-between gap-4">
+            <button 
+                type="button"
+                id="date-prev-btn"
+                class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                aria-label="Предыдущий день"
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <div class="flex items-center gap-3 flex-1 justify-center">
+                <span id="date-display" class="text-lg font-medium text-gray-800"></span>
+                <button
+                    type="button"
+                    id="date-calendar-btn"
+                    class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                    aria-label="Открыть календарь"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </button>
+            </div>
+            <button 
+                type="button"
+                id="date-next-btn"
+                class="p-2 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Следующий день"
+                disabled
+            >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+        </div>
+        <input
+            type="date"
+            id="entry-date-input"
+            class="hidden"
+            value="{{ today.strftime('%Y-%m-%d') }}"
+        >
+    </div>
+
+    <!-- Форма записи -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <form id="entryForm" class="space-y-6">
+            <!-- Состояния сегодня -->
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Состояния сегодня</h2>
+
+                <div class="space-y-4">
+                    <!-- Депрессивное состояние -->
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Депрессивное состояние</p>
+                        <div class="grid grid-cols-4 gap-2" data-state-group="depressive_state">
+                            <button type="button" data-value="none" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Нет</button>
+                            <button type="button" data-value="mild" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Лёгкое</button>
+                            <button type="button" data-value="moderate" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Умеренное</button>
+                            <button type="button" data-value="severe" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Тяжёлое</button>
+                        </div>
+                        <input type="hidden" name="depressive_state" value="">
+                    </div>
+
+                    <!-- Маниакальное состояние -->
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Маниакальное состояние / гипомания</p>
+                        <div class="grid grid-cols-4 gap-2" data-state-group="manic_state">
+                            <button type="button" data-value="none" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Нет</button>
+                            <button type="button" data-value="mild" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Лёгкое</button>
+                            <button type="button" data-value="moderate" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Умеренное</button>
+                            <button type="button" data-value="severe" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Тяжёлое</button>
+                        </div>
+                        <input type="hidden" name="manic_state" value="">
+                    </div>
+
+                    <!-- Раздражительность -->
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Раздражительность</p>
+                        <div class="grid grid-cols-4 gap-2" data-state-group="irritable_state">
+                            <button type="button" data-value="none" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Нет</button>
+                            <button type="button" data-value="mild" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Лёгкая</button>
+                            <button type="button" data-value="moderate" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Умеренная</button>
+                            <button type="button" data-value="severe" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Сильная</button>
+                        </div>
+                        <input type="hidden" name="irritable_state" value="">
+                    </div>
+
+                    <!-- Тревога -->
+                    <div>
+                        <p class="text-sm font-medium text-gray-700 mb-2">Тревога</p>
+                        <div class="grid grid-cols-4 gap-2" data-state-group="anxious_state">
+                            <button type="button" data-value="none" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Нет</button>
+                            <button type="button" data-value="mild" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Лёгкая</button>
+                            <button type="button" data-value="moderate" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Умеренная</button>
+                            <button type="button" data-value="severe" class="state-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Сильная</button>
+                        </div>
+                        <input type="hidden" name="anxious_state" value="">
+                    </div>
+
+                    <!-- Бинарные отметки -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t mt-4">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600 mb-2">Психотические симптомы</p>
+                            <div class="flex gap-2">
+                                <button type="button" data-binary="psychotic_symptoms" data-value="no" class="binary-btn px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Нет</button>
+                                <button type="button" data-binary="psychotic_symptoms" data-value="yes" class="binary-btn px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Да</button>
+                            </div>
+                            <input type="hidden" name="psychotic_symptoms" value="">
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-600 mb-2">Психотерапия сегодня</p>
+                            <div class="flex gap-2">
+                                <button type="button" data-binary="psychotherapy" data-value="no" class="binary-btn px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Нет</button>
+                                <button type="button" data-binary="psychotherapy" data-value="yes" class="binary-btn px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Да</button>
+                            </div>
+                            <input type="hidden" name="psychotherapy" value="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Пользовательские состояния -->
+            <div class="border-t pt-6" id="custom-states-section">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">Дополнительные состояния</h2>
+                    <button type="button" onclick="addCustomState()" class="text-sm text-indigo-600 hover:text-indigo-500 font-medium">
+                        + Добавить состояние
+                    </button>
+                </div>
+                <div id="custom-states-list" class="space-y-4">
+                    <!-- Заполняется JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Сон -->
+            <div class="border-t pt-6">
+                <h4 class="text-lg font-medium text-gray-800 mb-4">Сон</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Часы сна</label>
+                        <div class="space-y-2">
+                            <input type="range" id="sleep_hours" name="sleep_hours" min="0" max="24" step="0.5" value="8" class="w-full">
+                            <div class="flex justify-between items-center"> 
+                                <span class="text-xs text-gray-500">0 ч</span>
+                                <span id="sleep_hours_display" class="text-sm font-medium text-gray-700">8 часов</span>
+                                <span class="text-xs text-gray-500">24 ч</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Качество сна</label>
+                        <select id="sleep_quality" name="sleep_quality" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="poor">Плохое</option>
+                            <option value="average" selected>Среднее</option>
+                            <option value="good">Хорошее</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Лекарства -->
+            <div class="border-t pt-6" id="medications-section">
+                <h4 class="text-lg font-medium text-gray-800 mb-4">Прием лекарств</h4>
+                <div id="medications-list">
+                    <!-- Заполняется JavaScript -->
+                </div>
+                <button type="button" onclick="addMedication()" class="mt-3 text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                    + Добавить лекарство
+                </button>
+            </div>
+            
+            <!-- Тип дня -->
+            <div id="day-type-section" class="border-t pt-6 hidden">
+                <div class="flex items-center gap-2 mb-2">
+                    <h4 class="text-sm font-medium text-gray-600">Тип дня</h4>
+                    <button 
+                        type="button" 
+                        id="day-type-info-btn"
+                        class="hidden text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Узнать, почему определена эта фаза"
+                        onclick="showDayTypeExplanation()"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div
+                    id="day-type-display"
+                    class="inline-flex items-start gap-2 px-4 py-3 rounded-md border text-sm font-medium bg-gray-50 text-gray-700 border-gray-200"
+                >
+                    <!-- Наполняется JavaScript в зависимости от типа дня -->
+                </div>
+            </div>
+            
+            <!-- Заметки -->
+            <div class="border-t pt-6">
+                <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">Заметки</label>
+                <textarea id="notes" name="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ваши заметки о дне..."></textarea>
+            </div>
+            
+            <!-- Кнопки -->
+            <div class="flex justify-end space-x-3 pt-6">
+                <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium transition duration-150">
+                    Сохранить
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Модальное окно для добавления лекарства -->
+    <div id="addMedicationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <h3 id="medication-modal-title" class="text-lg font-semibold text-gray-800 mb-4">Добавить лекарство</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Название препарата</label>
+                            <input type="text" id="new-medication-name" placeholder="Название лекарства" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Дозировка (мг)</label>
+                            <input type="number" id="new-medication-dosage" placeholder="Например: 100" min="0" step="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Время приёма</label>
+                            <select id="new-medication-time" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="">Не указано</option>
+                                <option value="morning">Утро</option>
+                                <option value="afternoon">День</option>
+                                <option value="evening">Вечер</option>
+                                <option value="night">Ночь</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Частота приёма</label>
+                            <select id="new-medication-frequency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="daily">Ежедневно</option>
+                                <option value="as_needed">По необходимости</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button onclick="closeAddMedicationModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Отмена</button>
+                        <button id="save-medication-btn" onclick="saveMedication()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Добавить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для добавления пользовательского состояния -->
+    <div id="addCustomStateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <h3 id="state-modal-title" class="text-lg font-semibold text-gray-800 mb-4">Добавить состояние</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Название состояния</label>
+                            <input type="text" id="new-state-name" placeholder="Например: Вредные привычки" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Тип отметки</label>
+                            <select id="new-state-mark-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="binary">Да / Нет</option>
+                                <option value="categorical">Категориальный (нет — тяжёлое)</option>
+                                <option value="numeric">Числовая шкала (0-10)</option>
+                                <option value="multi_checkbox">Множественный выбор (чекбоксы)</option>
+                            </select>
+                        </div>
+                        <div id="new-state-options-wrapper" class="space-y-2 hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Варианты чекбоксов</label>
+                            <div id="new-state-options-list" class="space-y-2">
+                                <div class="flex items-center gap-2">
+                                    <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 new-state-option-input" placeholder="Например: сигареты">
+                                    <button type="button" onclick="removeNewStateOptionRow(this)" class="text-xs text-gray-500 hover:text-gray-700">Удалить</button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addNewStateOptionRow()" class="text-xs text-indigo-600 hover:text-indigo-500 font-medium">
+                                + Добавить вариант
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button onclick="closeAddCustomStateModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Отмена</button>
+                        <button id="save-state-btn" onclick="saveCustomState()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Добавить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.today = "{{ today.strftime('%Y-%m-%d') }}";
+    window.medications = {{ medications|tojson }};
+    window.customStates = {{ custom_states|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/entry.js') }}"></script>
+{% endblock %}
+
+

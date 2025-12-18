@@ -1,377 +1,179 @@
 {% extends "base.html" %}
 
-{% block title %}Дашборд - Стабил{% endblock %}
+{% block title %}Дашборд - Affecta{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Приветствие -->
-    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl p-6 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold mb-2">
-                    Добро пожаловать, {{ current_user.username }}!
-                </h1>
-                <p class="text-blue-100">
-                    {% if trend_data %}
-                        Сегодня {{ "now"|date("d.m.Y") }}. 
-                        {% if trend_data.mood and trend_data.mood.trend == 'increasing' %}
-                            Ваше настроение улучшается! 🌟
-                        {% elif trend_data.mood and trend_data.mood.trend == 'decreasing' %}
-                            Обратите внимание на свое настроение. 💙
-                        {% else %}
-                            Отличный день для новой записи! ✨
-                        {% endif %}
-                    {% else %}
-                        Готовы сделать первую запись?
-                    {% endif %}
-                </p>
+    <!-- Текущая фаза - главный элемент -->
+    <div class="bg-white rounded-lg shadow-sm p-8">
+        <div class="text-center">
+            <div class="flex items-center justify-center gap-2 mb-2">
+                <p class="text-sm font-medium text-gray-600">Текущая фаза</p>
+                <button 
+                    type="button" 
+                    id="current-phase-info-btn"
+                    class="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer inline-block"
+                    title="Узнать, почему определена эта фаза"
+                    style="display: inline-block;"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
             </div>
-            <div class="text-4xl">🧠</div>
+            <h2 id="current-phase-label" class="text-5xl font-bold mb-4">
+                {% if current_phase == 'depressive' %}
+                    <span class="text-red-600">Депрессия</span>
+                {% elif current_phase == 'normal' %}
+                    <span class="text-green-600">Норма</span>
+                {% elif current_phase == 'hypomanic' %}
+                    <span class="text-yellow-600">Гипомания</span>
+                {% elif current_phase == 'mixed' %}
+                    <span class="text-purple-600">Смешанная</span>
+                {% else %}
+                    <span class="text-gray-600">Норма</span>
+                {% endif %}
+            </h2>
+            <p class="text-gray-500 text-sm" id="current-phase-date">Рассчитано на основе последней записи</p>
         </div>
     </div>
-    
-    <!-- Быстрые действия -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a href="{{ url_for('daily_entry') }}" 
-           class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Сегодняшняя запись
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        {% if recent_entries and recent_entries[0].date == "now"|date("Y-m-d") %}
-                            Запись за сегодня уже есть
-                        {% else %}
-                            Сделать запись за {{ "now"|date("d.m.Y") }}
-                        {% endif %}
-                    </p>
-                </div>
+
+    <!-- Переключатель диапазона дат -->
+    <div class="bg-white rounded-lg shadow-sm p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-sm font-medium text-gray-700">Период:</span>
+                <button data-range="7" class="range-btn bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+                    7 дней
+                </button>
+                <button data-range="30" class="range-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                    Месяц
+                </button>
+                <button data-range="180" class="range-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                    6 месяцев
+                </button>
+                <button data-range="365" class="range-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                    Год
+                </button>
+                <button id="custom-range-btn" class="range-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                    Произвольно
+                </button>
             </div>
-        </a>
-        
-        <a href="{{ url_for('analytics') }}" 
-           class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Аналитика
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Посмотреть тренды и графики
-                    </p>
-                </div>
-            </div>
-        </a>
-        
-        <a href="{{ url_for('therapy_tools') }}" 
-           class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Инструменты
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        КПТ, ДБТ и другие техники
-                    </p>
-                </div>
-            </div>
-        </a>
+            <a href="{{ url_for('main.report_settings') }}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Экспорт отчёта
+            </a>
+        </div>
+        <div id="date-range-display" class="text-sm text-gray-600">
+            <!-- Отображается выбранный диапазон -->
+        </div>
     </div>
-    
+
+    <!-- Фазовый чарт -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">История фаз</h2>
+        <div class="relative" style="height: 120px;">
+            <canvas id="phaseChart" class="w-full h-full"></canvas>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-4 justify-center text-sm">
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
+                <span>Депрессия</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                <span>Норма</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
+                <span>Гипомания</span>
+            </div>
+            <div class="flex items-center">
+                <div class="w-4 h-4 bg-purple-500 rounded mr-2"></div>
+                <span>Смешанная</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дашборд сна -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Сон</h2>
+            <button id="toggle-sleep-chart" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+                <span id="toggle-sleep-text">Развернуть</span>
+            </button>
+        </div>
+        <div id="sleep-chart-container" class="hidden">
+            <div id="sleep-stats" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Статистика по сну будет добавлена через JavaScript -->
+            </div>
+            <div class="relative" style="height: 300px;">
+                <canvas id="sleepChart" class="w-full h-full"></canvas>
+            </div>
+            <div class="mt-4 relative" style="height: 200px;">
+                <canvas id="sleepQualityChart" class="w-full h-full"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Чарты состояний (свернуты по умолчанию) -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">Детальная аналитика</h2>
+            <button id="toggle-states-chart" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+                <span id="toggle-states-text">Развернуть</span>
+            </button>
+        </div>
+        <div id="states-chart-container" class="hidden">
+            <div class="relative" style="height: 320px;">
+                <canvas id="statesChart" class="w-full h-full"></canvas>
+            </div>
+        </div>
+    </div>
+
     <!-- Последние записи -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- График настроения -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 card-shadow">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Настроение за последние 7 дней
-            </h3>
-            <div class="h-64">
-                <canvas id="moodChart"></canvas>
-            </div>
-        </div>
-        
-        <!-- Предупреждения -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 card-shadow">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Предупреждения и рекомендации
-            </h3>
-            
-            {% if alerts %}
-                <div class="space-y-3">
-                    {% for alert in alerts %}
-                        <div class="flex items-start p-3 rounded-lg {% if alert.priority == 'high' or alert.priority == 'critical' %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% else %}bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800{% endif %}">
-                            <div class="flex-shrink-0 mt-0.5">
-                                {% if alert.priority == 'high' or alert.priority == 'critical' %}
-                                    <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                                    </svg>
-                                {% else %}
-                                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                                    </svg>
-                                {% endif %}
-                            </div>
-                            <div class="ml-3 flex-1">
-                                <p class="text-sm font-medium {% if alert.priority == 'high' or alert.priority == 'critical' %}text-red-800 dark:text-red-200{% else %}text-yellow-800 dark:text-yellow-200{% endif %}">
-                                    {{ alert.title }}
-                                </p>
-                                <p class="text-sm {% if alert.priority == 'high' or alert.priority == 'critical' %}text-red-700 dark:text-red-300{% else %}text-yellow-700 dark:text-yellow-300{% endif %}">
-                                    {{ alert.message }}
-                                </p>
-                            </div>
-                            <button onclick="markAlertRead({{ alert.id }})" 
-                                    class="ml-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                                Понятно
-                            </button>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center py-8">
-                    <div class="text-4xl mb-2">🎉</div>
-                    <p class="text-gray-600 dark:text-gray-400">
-                        Отлично! У вас нет активных предупреждений.
-                    </p>
-                    <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">
-                        Продолжайте в том же духе!
-                    </p>
-                </div>
-            {% endif %}
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Последние записи</h2>
+        <div id="recent-entries" class="space-y-3">
+            <!-- Заполняется JavaScript -->
         </div>
     </div>
-    
-    <!-- Краткая статистика -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow text-center">
-            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-                {{ recent_entries|length }}
+</div>
+
+<!-- Модальное окно для выбора произвольного диапазона -->
+<div id="custom-range-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Выберите диапазон дат</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Начальная дата</label>
+                <input type="date" id="custom-start-date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
             </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Записей
-            </div>
-        </div>
-        
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow text-center">
-            <div class="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
-                {% if recent_entries and recent_entries[0].mood %}
-                    {{ recent_entries[0].mood }}/10
-                {% else %}
-                    --
-                {% endif %}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Настроение сегодня
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Конечная дата</label>
+                <input type="date" id="custom-end-date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
             </div>
         </div>
-        
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow text-center">
-            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">
-                {% if recent_entries and recent_entries[0].sleep_hours %}
-                    {{ "%.1f"|format(recent_entries[0].sleep_hours) }}ч
-                {% else %}
-                    --
-                {% endif %}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Сон сегодня
-            </div>
-        </div>
-        
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl card-shadow text-center">
-            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400 mb-1">
-                {% if trend_data and trend_data.mood %}
-                    {% if trend_data.mood.trend == 'increasing' %}
-                        📈
-                    {% elif trend_data.mood.trend == 'decreasing' %}
-                        📉
-                    {% else %}
-                        ➡️
-                    {% endif %}
-                {% else %}
-                    --
-                {% endif %}
-            </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Тренд настроения
-            </div>
+        <div class="flex justify-end gap-3 mt-6">
+            <button id="cancel-custom-range" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                Отмена
+            </button>
+            <button id="apply-custom-range" class="px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition">
+                Применить
+            </button>
         </div>
     </div>
-    
-    <!-- Расстройства пользователя -->
-    {% if user_disorders %}
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 card-shadow">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Ваши расстройства
-        </h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {% for user_disorder in user_disorders %}
-                <div class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">
-                        {{ user_disorder.disorder.name }}
-                    </span>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    // График настроения
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('moodChart').getContext('2d');
-        
-        // Подготовка данных
-        const dates = [];
-        const moodData = [];
-        const anxietyData = [];
-        const energyData = [];
-        
-        {% for entry in recent_entries %}
-            dates.push('{{ entry.date|date("d.m") }}');
-            moodData.push({{ entry.mood or 'null' }});
-            anxietyData.push({{ entry.anxiety or 'null' }});
-            energyData.push({{ entry.energy or 'null' }});
-        {% endfor %}
-        
-        // Создание графика
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [
-                    {
-                        label: 'Настроение',
-                        data: moodData,
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Тревога',
-                        data: anxietyData,
-                        borderColor: '#EF4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    },
-                    {
-                        label: 'Энергия',
-                        data: energyData,
-                        borderColor: '#10B981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#374151'
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 10,
-                        ticks: {
-                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
-                        },
-                        grid: {
-                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
-                        },
-                        grid: {
-                            color: document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'
-                        }
-                    }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
-        });
-        
-        // Обновление цветов при смене темы
-        const updateChartColors = () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            chart.options.plugins.legend.labels.color = isDark ? '#E5E7EB' : '#374151';
-            chart.options.scales.y.ticks.color = isDark ? '#9CA3AF' : '#6B7280';
-            chart.options.scales.x.ticks.color = isDark ? '#9CA3AF' : '#6B7280';
-            chart.options.scales.y.grid.color = isDark ? '#374151' : '#E5E7EB';
-            chart.options.scales.x.grid.color = isDark ? '#374151' : '#E5E7EB';
-            chart.update();
-        };
-        
-        // Наблюдатель за изменением темы
-        const observer = new MutationObserver(updateChartColors);
-        observer.observe(document.documentElement, {
-            attributes: true,
-            attributeFilter: ['class']
-        });
-    });
-    
-    // Отметка предупреждения как прочитанного
-    function markAlertRead(alertId) {
-        fetch(`/api/alerts/mark-read/${alertId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Удалить предупреждение из DOM
-                event.target.closest('.flex').remove();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
-    
-    // Автообновление каждые 30 секунд
-    setInterval(() => {
-        // Можно добавить логику для обновления данных
-        console.log('Dashboard updated');
-    }, 30000);
+    window.weekEntries = {{ week_entries|tojson }};
+    window.today = "{{ today.strftime('%Y-%m-%d') }}";
+    window.currentPhaseExplanation = {{ current_phase_explanation|tojson }};
 </script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

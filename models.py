@@ -1,293 +1,455 @@
 """
-Модели базы данных для приложения Стабил
+Модели базы данных для биполярного трекера "Affecta"
+Проект для защиты - студент 20 лет
+
+Класс Database:
+- Подключение к MySQL через PyMySQL
+- Методы для работы с пользователями, записями, лекарствами
+- Методы для работы с кастомными трекерами и состояниями
+
+Класс User:
+- Модель пользователя для Flask-Login
+- Реализация интерфейса UserMixin
 """
 
-from flask_sqlalchemy import SQLAlchemy
+import os
+import pymysql
 from flask_login import UserMixin
-from datetime import datetime
-from sqlalchemy import JSON
+from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 
-db = SQLAlchemy()
+load_dotenv('.env')
 
-class User(UserMixin, db.Model):
-    """Модель пользователя"""
-    __tablename__ = 'users'
+def get_db_config():
+    """Получение конфигурации БД"""
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_user = os.environ.get('DB_USER', 'root')
+    db_pass = os.environ.get('DB_PASS', '')
+    db_name = os.environ.get('DB_NAME', 'treker')
+    db_port = os.environ.get('DB_PORT', '3306')
     
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    config = {
+        'host': db_host,
+        'user': db_user,
+        'database': db_name,
+        'charset': 'utf8mb4',
+        'cursorclass': pymysql.cursors.DictCursor
+    }
     
-    # Персональная информация
-    first_name = db.Column(db.String(100))
-    last_name = db.Column(db.String(100))
-    birth_date = db.Column(db.Date)
+    if db_port:
+        try:
+            config['port'] = int(db_port)
+        except ValueError:
+            pass
     
-    # Настройки
-    timezone = db.Column(db.String(50), default='UTC')
-    theme = db.Column(db.String(20), default='light')  # light, dark
-    language = db.Column(db.String(10), default='ru')
+    if db_pass:
+        config['password'] = db_pass.strip()
     
-    # Метаданные
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    last_login = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)
-    
-    # Связи
-    disorders = db.relationship('UserDisorder', backref='user', lazy='dynamic')
-    daily_entries = db.relationship('DailyEntry', backref='user', lazy='dynamic')
-    custom_trackers = db.relationship('CustomTracker', backref='user', lazy='dynamic')
-    screening_results = db.relationship('ScreeningResult', backref='user', lazy='dynamic')
-    therapy_notes = db.relationship('TherapyNote', backref='user', lazy='dynamic')
-    medications = db.relationship('Medication', backref='user', lazy='dynamic')
-    
-    def __repr__(self):
-        return f'<User {self.username}>'
+    return config
 
-class Disorder(db.Model):
-    """Справочник расстройств"""
-    __tablename__ = 'disorders'
+class Database:
+    """Класс для работы с базой данных"""
     
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(50), unique=True, nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
+    def __init__(self):
+        """Инициализация подключения к БД"""
+        self.connection = None
+        self.connect()
     
-    def __repr__(self):
-        return f'<Disorder {self.name}>'
+    def connect(self):
+        """Установка соединения с БД"""
+        try:
+            db_config = get_db_config()
+            db_config['connect_timeout'] = 10
+            db_config['read_timeout'] = 10
+            db_config['write_timeout'] = 10
+            self.connection = pymysql.connect(**db_config)
+        except pymysql.Error as e:
+            print(f"Ошибка подключения к БД: {e}")
+            raise
+    
+    def close(self):
+        """Закрытие соединения с БД"""
+        if self.connection:
+            self.connection.close()
+    
+    def execute_query(self, query, params=None, fetch=True):
+        """Выполнение SQL запроса"""
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, params or ())
+                self.connection.commit()
+                return cursor.fetchall() if fetch else cursor.lastrowid
+        except pymysql.Error:
+            self.connection.rollback()
+            raise
+    
+    # Методы для работы с пользователями
+    def create_user(self, username, password):
+        """Создание нового пользователя"""
+        password_hash = generate_password_hash(password)
+        query = """
+            INSERT INTO users (username, password_hash)
+            VALUES (%s, %s)
+        """
+        user_id = self.execute_query(query, (username, password_hash), fetch=False)
+        return user_id
+    
+    def get_user_by_username(self, username):
+        """Получение пользователя по имени"""
+        query = "SELECT * FROM users WHERE username = %s"
+        result = self.execute_query(query, (username,))
+        return result[0] if result else None
+    
+    def get_user_by_id(self, user_id):
+        """Получение пользователя по ID"""
+        query = "SELECT * FROM users WHERE id = %s"
+        result = self.execute_query(query, (user_id,))
+        if result:
+            user_data = result[0]
+            return User(user_data['id'], user_data['username'], user_data['password_hash'])
+        return None
+    
+    def check_password(self, username, password):
+        """Проверка пароля пользователя"""
+        user_data = self.get_user_by_username(username)
+        if user_data:
+            return check_password_hash(user_data['password_hash'], password)
+        return False
+    
+    # Методы для работы с записями
+    def create_entry(
+        self,
+        user_id,
+        entry_date,
+        mood,
+        irritability,
+        anxiety,
+        energy,
+        sleep_hours,
+        sleep_quality,
+        notes=None,
+        depressive_state='none',
+        manic_state='none',
+        irritable_state='none',
+        anxious_state='none',
+        psychotic_symptoms=False,
+        psychotherapy=False,
+    ):
+        """Создание новой записи.
 
-class UserDisorder(db.Model):
-    """Связь пользователя с расстройствами (онбординг)"""
-    __tablename__ = 'user_disorders'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    disorder_id = db.Column(db.Integer, db.ForeignKey('disorders.id'), nullable=False)
-    diagnosed = db.Column(db.Boolean, default=False)
-    diagnosed_date = db.Column(db.Date)
-    severity = db.Column(db.String(20))  # mild, moderate, severe
-    notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    disorder = db.relationship('Disorder', backref='user_disorders')
+        Числовые поля mood/irritability/anxiety/energy считаются устаревшими и
+        могут заполняться как производные от категориальных состояний для
+        обратной совместимости и аналитики.
+        """
+        query = """
+            INSERT INTO entries (
+                user_id,
+                entry_date,
+                mood,
+                irritability,
+                anxiety,
+                energy,
+                sleep_hours,
+                sleep_quality,
+                notes,
+                depressive_state,
+                manic_state,
+                irritable_state,
+                anxious_state,
+                psychotic_symptoms,
+                psychotherapy
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                mood = VALUES(mood),
+                irritability = VALUES(irritability),
+                anxiety = VALUES(anxiety),
+                energy = VALUES(energy),
+                sleep_hours = VALUES(sleep_hours),
+                sleep_quality = VALUES(sleep_quality),
+                notes = VALUES(notes),
+                depressive_state = VALUES(depressive_state),
+                manic_state = VALUES(manic_state),
+                irritable_state = VALUES(irritable_state),
+                anxious_state = VALUES(anxious_state),
+                psychotic_symptoms = VALUES(psychotic_symptoms),
+                psychotherapy = VALUES(psychotherapy)
+        """
+        return self.execute_query(
+            query,
+            (
+                user_id,
+                entry_date,
+                mood,
+                irritability,
+                anxiety,
+                energy,
+                sleep_hours,
+                sleep_quality,
+                notes,
+                depressive_state,
+                manic_state,
+                irritable_state,
+                anxious_state,
+                int(bool(psychotic_symptoms)),
+                int(bool(psychotherapy)),
+            ),
+            fetch=False,
+        )
 
-class DailyEntry(db.Model):
-    """Ежедневная запись трекера"""
-    __tablename__ = 'daily_entries'
+    def update_day_type(self, entry_id, day_type):
+        """Обновление типа дня для уже сохранённой записи"""
+        query = """
+            UPDATE entries
+            SET day_type = %s
+            WHERE id = %s
+        """
+        self.execute_query(query, (day_type, entry_id), fetch=False)
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False)
+    def get_entry(self, user_id, entry_date):
+        """Получение записи за конкретную дату"""
+        query = """
+            SELECT * FROM entries 
+            WHERE user_id = %s AND entry_date = %s
+        """
+        result = self.execute_query(query, (user_id, entry_date))
+        return result[0] if result else None
     
-    # Основные шкалы (0-10)
-    mood = db.Column(db.Integer)  # Настроение
-    irritability = db.Column(db.Integer)  # Раздражительность
-    anxiety = db.Column(db.Integer)  # Тревога
-    energy = db.Column(db.Integer)  # Энергия
+    def get_entries_period(self, user_id, start_date, end_date):
+        """Получение записей за период"""
+        query = """
+            SELECT * FROM entries 
+            WHERE user_id = %s AND entry_date BETWEEN %s AND %s
+            ORDER BY entry_date ASC
+        """
+        return self.execute_query(query, (user_id, start_date, end_date))
     
-    # Дополнительные параметры
-    sleep_hours = db.Column(db.Float)
-    sleep_quality = db.Column(db.Integer)  # 1-10
+    # Методы для работы с лекарствами
+    def create_medication(self, user_id, name, dosage_mg=None, time_of_day=None, frequency='daily'):
+        """Создание нового лекарства"""
+        query = """
+            INSERT INTO medications (user_id, name, dosage_mg, time_of_day, frequency)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        return self.execute_query(query, (user_id, name, dosage_mg, time_of_day, frequency), fetch=False)
     
-    # Тип дня
-    day_type = db.Column(db.String(20))  # normal, manic, depressive, mixed
+    def get_user_medications(self, user_id):
+        """Получение списка лекарств пользователя"""
+        query = """
+            SELECT * FROM medications 
+            WHERE user_id = %s 
+            ORDER BY name ASC
+        """
+        return self.execute_query(query, (user_id,))
     
-    # Медикаменты
-    medications_taken = db.Column(db.Boolean, default=False)
-    medications_notes = db.Column(db.Text)
+    def add_medication_intake(self, entry_id, med_id, taken='full'):
+        """Добавление информации о приеме лекарства"""
+        query = """
+            INSERT INTO med_intakes (entry_id, med_id, taken)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE taken = VALUES(taken)
+        """
+        self.execute_query(query, (entry_id, med_id, taken), fetch=False)
     
-    # Пользовательские трекеры (JSON)
-    custom_values = db.Column(JSON)
+    def get_medication_intakes(self, entry_id):
+        """Получение информации о приемах лекарств для записи"""
+        query = """
+            SELECT m.name, mi.taken, m.id as med_id, m.dosage_mg, m.time_of_day, m.frequency
+            FROM med_intakes mi
+            JOIN medications m ON mi.med_id = m.id
+            WHERE mi.entry_id = %s
+        """
+        return self.execute_query(query, (entry_id,))
     
-    # Примечания
-    notes = db.Column(db.Text)
+    # Методы для работы с кастомными трекерами
+    def create_custom_tracker(self, user_id, name, tracker_type, min_value=0, max_value=10):
+        """Создание кастомного трекера"""
+        query = """
+            INSERT INTO custom_trackers (user_id, name, type, min_value, max_value)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        return self.execute_query(query, (user_id, name, tracker_type, min_value, max_value), fetch=False)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    def get_user_trackers(self, user_id):
+        """Получение списка кастомных трекеров пользователя"""
+        query = """
+            SELECT * FROM custom_trackers 
+            WHERE user_id = %s 
+            ORDER BY name ASC
+        """
+        return self.execute_query(query, (user_id,))
     
-    # Уникальный индекс для предотвращения дублей
-    __table_args__ = (db.UniqueConstraint('user_id', 'date', name='unique_user_date'),)
+    def add_custom_value(self, entry_id, tracker_id, value):
+        """Добавление значения кастомного трекера"""
+        query = """
+            INSERT INTO custom_values (entry_id, tracker_id, value)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE value = VALUES(value)
+        """
+        self.execute_query(query, (entry_id, tracker_id, value), fetch=False)
     
-    def __repr__(self):
-        return f'<DailyEntry {self.user_id} {self.date}>'
+    def get_custom_values(self, entry_id):
+        """Получение значений кастомных трекеров для записи"""
+        query = """
+            SELECT ct.name, ct.type, cv.value, ct.min_value, ct.max_value, ct.id as tracker_id
+            FROM custom_values cv
+            JOIN custom_trackers ct ON cv.tracker_id = ct.id
+            WHERE cv.entry_id = %s
+        """
+        return self.execute_query(query, (entry_id,))
+    
+    def get_entries_with_custom_data(self, user_id, start_date, end_date):
+        """Получение записей с кастомными данными за период"""
+        query = """
+            SELECT e.*, 
+                   GROUP_CONCAT(DISTINCT CONCAT(m.name, ':', mi.taken) SEPARATOR ';') as medications,
+                   GROUP_CONCAT(DISTINCT CONCAT(ct.name, ':', cv.value) SEPARATOR ';') as custom_values
+            FROM entries e
+            LEFT JOIN med_intakes mi ON e.id = mi.entry_id
+            LEFT JOIN medications m ON mi.med_id = m.id
+            LEFT JOIN custom_values cv ON e.id = cv.entry_id
+            LEFT JOIN custom_trackers ct ON cv.tracker_id = ct.id
+            WHERE e.user_id = %s AND e.entry_date BETWEEN %s AND %s
+            GROUP BY e.id
+            ORDER BY e.entry_date ASC
+        """
+        return self.execute_query(query, (user_id, start_date, end_date))
+    
+    # Методы для работы с пользовательскими состояниями
+    def create_custom_state(self, user_id, name, mark_type='categorical'):
+        """Создание пользовательского состояния"""
+        query = """
+            INSERT INTO custom_states (user_id, name, mark_type)
+            VALUES (%s, %s, %s)
+        """
+        return self.execute_query(query, (user_id, name, mark_type), fetch=False)
+    
+    def create_custom_state_option(self, state_id, label, position=0):
+        """Создание варианта (опции) для пользовательского состояния типа multi_checkbox"""
+        query = """
+            INSERT INTO custom_state_options (state_id, label, position)
+            VALUES (%s, %s, %s)
+        """
+        return self.execute_query(query, (state_id, label, position), fetch=False)
+    
+    def get_user_custom_states(self, user_id):
+        """Получение списка пользовательских состояний пользователя"""
+        query = """
+            SELECT 
+                cs.*,
+                GROUP_CONCAT(so.label ORDER BY so.position SEPARATOR '||') AS options
+            FROM custom_states cs
+            LEFT JOIN custom_state_options so ON so.state_id = cs.id
+            WHERE cs.user_id = %s
+            GROUP BY cs.id
+            ORDER BY cs.name ASC
+        """
+        return self.execute_query(query, (user_id,))
+    
+    def add_custom_state_value(self, entry_id, state_id, value):
+        """Добавление значения пользовательского состояния"""
+        query = """
+            INSERT INTO custom_state_values (entry_id, state_id, value)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE value = VALUES(value)
+        """
+        self.execute_query(query, (entry_id, state_id, value), fetch=False)
+    
+    def get_custom_state_values(self, entry_id):
+        """Получение значений пользовательских состояний для записи"""
+        query = """
+            SELECT cs.name, cs.mark_type, csv.value, cs.id as state_id
+            FROM custom_state_values csv
+            JOIN custom_states cs ON csv.state_id = cs.id
+            WHERE csv.entry_id = %s
+        """
+        return self.execute_query(query, (entry_id,))
+    
+    def update_custom_state(self, state_id, user_id, name, mark_type):
+        """Обновление пользовательского состояния"""
+        query = """
+            UPDATE custom_states 
+            SET name = %s, mark_type = %s 
+            WHERE id = %s AND user_id = %s
+        """
+        self.execute_query(query, (name, mark_type, state_id, user_id), fetch=False)
+    
+    def delete_custom_state_options(self, state_id):
+        """Удаление всех опций пользовательского состояния"""
+        query = "DELETE FROM custom_state_options WHERE state_id = %s"
+        self.execute_query(query, (state_id,), fetch=False)
+    
+    def get_custom_state_options(self, state_id):
+        """Получение опций пользовательского состояния"""
+        query = """
+            SELECT id, label, position 
+            FROM custom_state_options 
+            WHERE state_id = %s 
+            ORDER BY position ASC
+        """
+        return self.execute_query(query, (state_id,))
+    
+    def delete_custom_state(self, state_id, user_id):
+        """Удаление пользовательского состояния вместе с его значениями и опциями"""
+        # Удаляем значения этого состояния в записях пользователя
+        query_values = """
+            DELETE csv FROM custom_state_values csv
+            JOIN entries e ON csv.entry_id = e.id
+            WHERE csv.state_id = %s AND e.user_id = %s
+        """
+        self.execute_query(query_values, (state_id, user_id), fetch=False)
 
-class CustomTracker(db.Model):
-    """Пользовательские трекеры"""
-    __tablename__ = 'custom_trackers'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    type = db.Column(db.String(20), nullable=False)  # slider, checkbox, number, text
-    
-    # Настройки для слайдера
-    min_value = db.Column(db.Integer, default=0)
-    max_value = db.Column(db.Integer, default=10)
-    
-    # Настройки для всех типов
-    default_value = db.Column(db.String(50))
-    unit = db.Column(db.String(20))  # единицы измерения
-    
-    # Метаданные
-    color = db.Column(db.String(20), default='#3B82F6')
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<CustomTracker {self.name}>'
+        # Удаляем опции состояния
+        query_options = "DELETE FROM custom_state_options WHERE state_id = %s"
+        self.execute_query(query_options, (state_id,), fetch=False)
 
-class Medication(db.Model):
-    """Медикаменты пользователя"""
-    __tablename__ = 'medications'
+        # Удаляем само состояние
+        query_state = "DELETE FROM custom_states WHERE id = %s AND user_id = %s"
+        self.execute_query(query_state, (state_id, user_id), fetch=False)
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(200), nullable=False)
-    dosage = db.Column(db.String(100))
-    frequency = db.Column(db.String(100))  # daily, twice_daily, etc.
-    
-    # Время приема
-    morning = db.Column(db.Boolean, default=False)
-    afternoon = db.Column(db.Boolean, default=False)
-    evening = db.Column(db.Boolean, default=False)
-    night = db.Column(db.Boolean, default=False)
-    
-    # Настройки напоминаний
-    reminder_enabled = db.Column(db.Boolean, default=True)
-    
-    # Метаданные
-    is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<Medication {self.name}>'
+    def delete_medication(self, med_id, user_id):
+        """Удаление лекарства вместе со всеми приёмами у этого пользователя"""
+        # Сначала удаляем приёмы, связанные с записями этого пользователя
+        query_intakes = """
+            DELETE mi FROM med_intakes mi
+            JOIN entries e ON mi.entry_id = e.id
+            WHERE mi.med_id = %s AND e.user_id = %s
+        """
+        self.execute_query(query_intakes, (med_id, user_id), fetch=False)
 
-class ScreeningResult(db.Model):
-    """Результаты скрининговых тестов"""
-    __tablename__ = 'screening_results'
+        # Затем удаляем само лекарство
+        query_med = "DELETE FROM medications WHERE id = %s AND user_id = %s"
+        self.execute_query(query_med, (med_id, user_id), fetch=False)
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    test_type = db.Column(db.String(50), nullable=False)  # bdi_ii, bss
-    date_taken = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Результаты
-    total_score = db.Column(db.Integer, nullable=False)
-    responses = db.Column(JSON, nullable=False)  # Сохранение ответов
-    
-    # Интерпретация
-    severity = db.Column(db.String(50))  # minimal, mild, moderate, severe
-    interpretation = db.Column(db.Text)
-    
-    # Рекомендации
-    recommendations = db.Column(db.Text)
-    
-    def __repr__(self):
-        return f'<ScreeningResult {self.test_type} {self.total_score}>'
+    def update_medication(self, med_id, user_id, name, dosage_mg=None, time_of_day=None, frequency='daily'):
+        """Обновление лекарства"""
+        query = """
+            UPDATE medications 
+            SET name = %s, dosage_mg = %s, time_of_day = %s, frequency = %s 
+            WHERE id = %s AND user_id = %s
+        """
+        self.execute_query(query, (name, dosage_mg, time_of_day, frequency, med_id, user_id), fetch=False)
 
-class TherapyNote(db.Model):
-    """Заметки из психотерапии и дневник мыслей"""
-    __tablename__ = 'therapy_notes'
+class User(UserMixin):
+    """Класс пользователя для Flask-Login"""
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    def __init__(self, user_id, username, password_hash):
+        self.id = user_id
+        self.username = username
+        self.password_hash = password_hash
     
-    # Тип заметки
-    note_type = db.Column(db.String(50), default='thought')  # thought, cbt, dbt, act, ipsrt
+    def get_id(self):
+        """Возвращает ID пользователя"""
+        return str(self.id)
     
-    # Содержание
-    title = db.Column(db.String(200))
-    content = db.Column(db.Text, nullable=False)
+    def is_authenticated(self):
+        """Проверка аутентификации"""
+        return True
     
-    # Для КПТ (когнитивно-поведенческая терапия)
-    situation = db.Column(db.Text)
-    automatic_thoughts = db.Column(db.Text)
-    emotions = db.Column(db.Text)
-    cognitive_distortions = db.Column(db.Text)
-    rational_response = db.Column(db.Text)
+    def is_active(self):
+        """Проверка активности"""
+        return True
     
-    # Для ДБТ (диалектико-поведенческая терапия)
-    skill_used = db.Column(db.String(100))
-    effectiveness = db.Column(db.Integer)  # 1-10
-    
-    # Метаданные
-    date_created = db.Column(db.Date, default=datetime.utcnow().date)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __repr__(self):
-        return f'<TherapyNote {self.title}>'
-
-class Alert(db.Model):
-    """Системные предупреждения и уведомления"""
-    __tablename__ = 'alerts'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    # Тип и содержание
-    alert_type = db.Column(db.String(50), nullable=False)  # mood, medication, screening
-    title = db.Column(db.String(200), nullable=False)
-    message = db.Column(db.Text, nullable=False)
-    
-    # Приоритет
-    priority = db.Column(db.String(20), default='medium')  # low, medium, high, critical
-    
-    # Статус
-    is_read = db.Column(db.Boolean, default=False)
-    is_dismissed = db.Column(db.Boolean, default=False)
-    
-    # Метаданные
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    dismissed_at = db.Column(db.DateTime)
-    
-    def __repr__(self):
-        return f'<Alert {self.title}>'
-
-class CorporateGroup(db.Model):
-    """Корпоративные группы для анонимной аналитики"""
-    __tablename__ = 'corporate_groups'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    code = db.Column(db.String(50), unique=True, nullable=False)
-    description = db.Column(db.Text)
-    
-    # Настройки
-    is_active = db.Column(db.Boolean, default=True)
-    allow_analytics = db.Column(db.Boolean, default=True)
-    
-    # Метаданные
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Связи
-    members = db.relationship('User', secondary='group_memberships', backref='corporate_groups')
-    
-    def __repr__(self):
-        return f'<CorporateGroup {self.name}>'
-
-class GroupMembership(db.Model):
-    """Членство в корпоративных группах"""
-    __tablename__ = 'group_memberships'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey('corporate_groups.id'), nullable=False)
-    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Анонимный ID для статистики
-    anonymous_id = db.Column(db.String(100), unique=True)
-    
-    # Роль в группе
-    role = db.Column(db.String(50), default='member')  # member, admin
-
-# Таблица для связи многие-ко-многим пользователей с группами
-group_memberships = db.Table('group_memberships',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('group_id', db.Integer, db.ForeignKey('corporate_groups.id'), primary_key=True),
-    db.Column('joined_at', db.DateTime, default=datetime.utcnow),
-    db.Column('anonymous_id', db.String(100), unique=True),
-    db.Column('role', db.String(50), default='member')
-)
+    def is_anonymous(self):
+        """Проверка анонимности"""
+        return False

@@ -1,874 +1,778 @@
 """
-Маршруты (роуты) для приложения Стабил
+Маршруты для биполярного трекера "Affecta"
+Проект для защиты - студент 20 лет
+
+Основные маршруты:
+- / - главная страница
+- /register, /login, /logout - аутентификация
+- /entry - страница ввода/редактирования записи
+- /dashboard - дашборд с графиками
+- /analytics - страница аналитики
+- /report_settings, /generate_report - генерация PDF отчётов
+
+API endpoints:
+- /save_entry - сохранение записи
+- /get_entry/<date> - получение записи за дату
+- /add_medication, /add_tracker, /add_custom_state - добавление элементов
+- /get_dashboard_data, /get_analytics_data - получение данных для графиков
 """
 
-from flask import render_template, redirect, url_for, flash, request, jsonify, session
-from flask_login import login_required, current_user, login_user, logout_user
-from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import datetime, timedelta
-from app import app, db, bcrypt
-from models import *
-import json
-import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-import warnings
-warnings.filterwarnings('ignore')
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, Response
+from flask_login import login_user, logout_user, login_required, current_user
+from datetime import datetime, date, timedelta
 
-# ========== АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ==========
+from models import Database, User
 
-@app.route('/register', methods=['GET', 'POST'])
+bp = Blueprint('main', __name__, url_prefix='')
+
+def get_db():
+    return Database()
+
+EXPLANATION_TEXT = {'none': 'Нет', 'mild': 'Лёгкое', 'moderate': 'Умеренное', 'severe': 'Тяжёлое'}
+
+def determine_phase_with_statistics(current_entry, recent_entries):
+    """
+    Определение фазы биполярного расстройства на основе статистики
+    
+    Алгоритм для защиты проекта:
+    1. Анализ последних 7 дней записей
+    2. Оценка состояний (none/mild/moderate/severe) с весами 0/3/6/9
+    3. Определение смешанной фазы при быстрых переключениях (>=2 за период)
+    4. Определение смешанной фазы при одновременных симптомах депрессии и гипомании
+    5. Определение устойчивой фазы при >=50% дней с симптомами
+    6. Учёт сна: <3ч усиливает гипоманию, >12ч усиливает депрессию
+    """
+    def state_score(value):
+        return {'none': 0, 'mild': 3, 'moderate': 6, 'severe': 9}.get(value or 'none', 0)
+    
+    def check_episode(score, sleep_hours):
+        return score >= 6 or (score >= 3 and (sleep_hours <= 3 or sleep_hours >= 12))
+    
+    # Добавляем текущую запись в список для анализа
+    all_entries = list(recent_entries)
+    if current_entry:
+        all_entries.append({
+            'depressive_state': current_entry.get('depressive_state', 'none'),
+            'manic_state': current_entry.get('manic_state', 'none'),
+            'sleep_hours': current_entry.get('sleep_hours', 0),
+            'entry_date': current_entry.get('entry_date')
+        })
+    
+    if not all_entries:
+        return 'normal', ["Нет данных для анализа"]
+    
+    # Анализ каждой записи
+    phase_scores = {
+        'depressive': 0,
+        'hypomanic': 0,
+        'mixed': 0,
+        'normal': 0
+    }
+    
+    phase_history = []
+    explanation_parts = []
+    
+    for entry in all_entries:
+        sleep_hours = float(entry.get('sleep_hours', 0) or 0)
+        dep_episode = check_episode(state_score(entry.get('depressive_state', 'none')), sleep_hours)
+        man_episode = check_episode(state_score(entry.get('manic_state', 'none')), sleep_hours)
+        
+        if dep_episode and man_episode:
+            day_phase = 'mixed'
+        elif dep_episode:
+            day_phase = 'depressive'
+        elif man_episode:
+            day_phase = 'hypomanic'
+        else:
+            day_phase = 'normal'
+        
+        phase_history.append(day_phase)
+        phase_scores[day_phase] += 1
+    
+    rapid_switches = sum(1 for i in range(len(phase_history) - 1)
+                        if {phase_history[i], phase_history[i+1]} == {'depressive', 'hypomanic'})
+    
+    # Если есть 2+ быстрых переключения за период - это смешанная фаза
+    if rapid_switches >= 2:
+        explanation_parts.append(f"Смешанная фаза определена на основе анализа паттернов за последние {len(all_entries)} дней")
+        explanation_parts.append(f"Обнаружены быстрые переключения между депрессией и гипоманией: {rapid_switches} переключений за период")
+        explanation_parts.append("Быстрая смена фаз указывает на смешанное состояние")
+        return 'mixed', explanation_parts
+    
+    current_sleep = float(current_entry.get('sleep_hours', 0) or 0)
+    current_dep_episode = check_episode(state_score(current_entry.get('depressive_state', 'none')), current_sleep)
+    current_man_episode = check_episode(state_score(current_entry.get('manic_state', 'none')), current_sleep)
+    
+    if current_dep_episode and current_man_episode:
+        explanation_parts.append("Смешанная фаза определена на основе текущей записи")
+        dep_state = current_entry.get('depressive_state', 'none')
+        man_state = current_entry.get('manic_state', 'none')
+        explanation_parts.append(f"Одновременно присутствуют симптомы: депрессивное состояние ({EXPLANATION_TEXT.get(dep_state, dep_state)}) и маниакальное состояние ({EXPLANATION_TEXT.get(man_state, man_state)})")
+        if current_sleep >= 12:
+            explanation_parts.append(f"Дополнительно: очень много сна ({current_sleep} ч) усилило депрессивные симптомы")
+        if current_sleep <= 3:
+            explanation_parts.append(f"Дополнительно: очень мало сна ({current_sleep} ч) усилило маниакальные симптомы")
+        return 'mixed', explanation_parts
+    
+    # Определение фазы по статистике (устойчивость >= 50%)
+    total_days = len(all_entries)
+    threshold = max(1, total_days * 0.5)  # Минимум 50% дней
+    
+    # Исключаем 'normal' из статистики, если есть другие фазы
+    non_normal_scores = {k: v for k, v in phase_scores.items() if k != 'normal'}
+    
+    if non_normal_scores:
+        max_phase = max(non_normal_scores.items(), key=lambda x: x[1])
+        if max_phase[1] >= threshold:
+            phase_name = {'depressive': 'Депрессивная', 'hypomanic': 'Гипоманиакальная', 'mixed': 'Смешанная'}[max_phase[0]]
+            explanation_parts.append(f"{phase_name} фаза определена на основе статистики за последние {total_days} дней")
+            explanation_parts.append(f"Фаза устойчива: {max_phase[1]} из {total_days} дней ({int(max_phase[1]/total_days*100)}%)")
+            if max_phase[0] in ['depressive', 'hypomanic']:
+                state = current_entry.get(f"{max_phase[0].replace('hypomanic', 'manic')}_state", 'none')
+                explanation_parts.append(f"Текущее состояние: {EXPLANATION_TEXT.get(state, state)}")
+            return max_phase[0], explanation_parts
+    
+    if current_dep_episode:
+        explanation_parts.append("Депрессивная фаза определена на основе текущей записи")
+        if total_days > 1:
+            explanation_parts.append(f"За последние {total_days} дней фаза не была устойчивой (менее 50% дней)")
+        state = current_entry.get('depressive_state', 'none')
+        explanation_parts.append(f"Текущее депрессивное состояние: {EXPLANATION_TEXT.get(state, state)}")
+        return 'depressive', explanation_parts
+    elif current_man_episode:
+        explanation_parts.append("Гипоманиакальная фаза определена на основе текущей записи")
+        if total_days > 1:
+            explanation_parts.append(f"За последние {total_days} дней фаза не была устойчивой (менее 50% дней)")
+        state = current_entry.get('manic_state', 'none')
+        explanation_parts.append(f"Текущее маниакальное состояние: {EXPLANATION_TEXT.get(state, state)}")
+        return 'hypomanic', explanation_parts
+    
+    explanation_parts.append("Нормальная фаза определена на основе анализа")
+    if total_days > 1:
+        explanation_parts.append(f"За последние {total_days} дней не было устойчивых симптомов")
+    return 'normal', explanation_parts
+
+@bp.route('/')
+def index():
+    """Главная страница"""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.entry'))
+    return render_template('index.html')
+
+@bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Регистрация нового пользователя"""
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.entry'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        confirm_password = request.form.get('confirm_password', '')
         
         # Валидация
-        if not all([username, email, password, confirm_password]):
-            flash('Все поля обязательны для заполнения', 'error')
+        if not username or not password:
+            flash('Пожалуйста, заполните все поля', 'error')
             return render_template('register.html')
         
         if password != confirm_password:
             flash('Пароли не совпадают', 'error')
             return render_template('register.html')
         
-        if User.query.filter_by(username=username).first():
+        if len(password) < 6:
+            flash('Пароль должен содержать минимум 6 символов', 'error')
+            return render_template('register.html')
+        
+        db = get_db()
+        
+        # Проверка существования пользователя
+        existing_user = db.get_user_by_username(username)
+        if existing_user:
             flash('Пользователь с таким именем уже существует', 'error')
             return render_template('register.html')
         
-        if User.query.filter_by(email=email).first():
-            flash('Пользователь с таким email уже существует', 'error')
-            return render_template('register.html')
-        
-        # Создание пользователя
-        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-        user = User(username=username, email=email, password_hash=password_hash)
-        
         try:
-            db.session.add(user)
-            db.session.commit()
-            flash('Регистрация успешна! Теперь вы можете войти.', 'success')
-            return redirect(url_for('login'))
+            user_id = db.create_user(username, password)
+            user = db.get_user_by_id(user_id)
+            if user:
+                login_user(user, remember=True)
+                flash('Регистрация успешна!', 'success')
+                return redirect(url_for('main.entry'))
         except Exception as e:
-            db.session.rollback()
-            flash('Ошибка регистрации. Попробуйте позже.', 'error')
-            return render_template('register.html')
+            flash(f'Ошибка: {str(e)}', 'error')
     
     return render_template('register.html')
 
-@app.route('/login', methods=['GET', 'POST'])
+@bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Вход в систему"""
+    """Авторизация пользователя"""
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.entry'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        remember = bool(request.form.get('remember'))
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
         
-        if not all([username, password]):
+        if not username or not password:
             flash('Пожалуйста, заполните все поля', 'error')
             return render_template('login.html')
         
-        user = User.query.filter_by(username=username).first()
+        db = get_db()
         
-        if user and bcrypt.check_password_hash(user.password_hash, password):
-            login_user(user, remember=remember)
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-            
-            # Проверка, прошел ли пользователь онбординг
-            if not UserDisorder.query.filter_by(user_id=user.id).first():
-                return redirect(url_for('onboarding'))
-            
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Неверное имя пользователя или пароль', 'error')
+        if db.check_password(username, password):
+            user_data = db.get_user_by_username(username)
+            user = User(user_data['id'], user_data['username'], user_data['password_hash'])
+            login_user(user, remember=True)
+            return redirect(request.args.get('next') or url_for('main.entry'))
+        flash('Неверное имя пользователя или пароль', 'error')
     
     return render_template('login.html')
 
-@app.route('/logout')
+@bp.route('/logout')
 @login_required
 def logout():
     """Выход из системы"""
     logout_user()
     flash('Вы успешно вышли из системы', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('main.login'))
 
-# ========== ОНБОРДИНГ ==========
-
-@app.route('/onboarding', methods=['GET', 'POST'])
-@login_required
-def onboarding():
-    """Первичная настройка пользователя"""
-    if UserDisorder.query.filter_by(user_id=current_user.id).first():
-        flash('Вы уже прошли онбординг', 'info')
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        selected_disorders = request.form.getlist('disorders')
-        
-        if not selected_disorders and request.form.get('action') != 'skip':
-            flash('Пожалуйста, выберите хотя бы одно расстройство или нажмите "Не знаю"', 'error')
-            return render_template('onboarding.html', disorders=Disorder.query.all())
-        
-        # Сохранение выбранных расстройств
-        for disorder_code in selected_disorders:
-            disorder = Disorder.query.filter_by(code=disorder_code).first()
-            if disorder:
-                user_disorder = UserDisorder(
-                    user_id=current_user.id,
-                    disorder_id=disorder.id,
-                    diagnosed=request.form.get(f'diagnosed_{disorder_code}') == 'yes'
-                )
-                db.session.add(user_disorder)
-        
-        try:
-            db.session.commit()
-            flash('Онбординг завершен! Добро пожаловать в Стабил.', 'success')
-            return redirect(url_for('dashboard'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Ошибка сохранения данных. Попробуйте позже.', 'error')
-    
-    disorders = Disorder.query.all()
-    return render_template('onboarding.html', disorders=disorders)
-
-# ========== ГЛАВНЫЙ ДАШБОРД ==========
-
-@app.route('/dashboard')
+@bp.route('/dashboard')
 @login_required
 def dashboard():
-    """Главный дашборд"""
-    # Получение последних записей
-    recent_entries = DailyEntry.query.filter_by(user_id=current_user.id)\
-                                   .order_by(DailyEntry.date.desc())\
-                                   .limit(7).all()
+    """Экран обзора и аналитики"""
+    db = get_db()
+    today = date.today()
+
+    # Получение данных за последние 7 дней для графиков
+    week_ago = today - timedelta(days=6)
+    week_entries = db.get_entries_period(current_user.id, week_ago, today)
     
-    # Проверка на пропущенные дни
-    user_disorders = UserDisorder.query.filter_by(user_id=current_user.id).all()
-    
-    # Получение предупреждений
-    alerts = Alert.query.filter_by(user_id=current_user.id, is_read=False)\
-                       .order_by(Alert.priority.desc(), Alert.created_at.desc())\
-                       .limit(5).all()
-    
-    # Анализ трендов
-    trend_data = get_trend_data(current_user.id)
+    # Получение текущей фазы на основе статистики
+    current_phase = 'normal'
+    current_phase_explanation = []
+    if week_entries:
+        last_entry = week_entries[-1]
+        # Используем функцию определения фазы с учетом статистики
+        current_phase, current_phase_explanation = determine_phase_with_statistics(
+            current_entry={
+                'depressive_state': last_entry.get('depressive_state', 'none'),
+                'manic_state': last_entry.get('manic_state', 'none'),
+                'sleep_hours': float(last_entry.get('sleep_hours', 0) or 0),
+                'entry_date': last_entry.get('entry_date')
+            },
+            recent_entries=week_entries[:-1]  # Все записи кроме последней
+        )
     
     return render_template('dashboard.html', 
-                         recent_entries=recent_entries,
-                         user_disorders=user_disorders,
-                         alerts=alerts,
-                         trend_data=trend_data)
+                         week_entries=week_entries,
+                         today=today,
+                         current_phase=current_phase,
+                         current_phase_explanation=current_phase_explanation)
 
-@app.route('/daily-entry', methods=['GET', 'POST'])
+@bp.route('/get_dashboard_data')
 @login_required
-def daily_entry():
-    """Ежедневная запись"""
-    today = datetime.now().date()
-    
-    # Поиск существующей записи за сегодня
-    existing_entry = DailyEntry.query.filter_by(
-        user_id=current_user.id,
-        date=today
-    ).first()
-    
-    if request.method == 'POST':
-        # Получение данных из формы
-        mood = request.form.get('mood', type=int)
-        irritability = request.form.get('irritability', type=int)
-        anxiety = request.form.get('anxiety', type=int)
-        energy = request.form.get('energy', type=int)
-        sleep_hours = request.form.get('sleep_hours', type=float)
-        sleep_quality = request.form.get('sleep_quality', type=int)
-        day_type = request.form.get('day_type')
-        notes = request.form.get('notes', '')
-        medications_taken = bool(request.form.get('medications_taken'))
-        
-        # Сбор пользовательских трекеров
-        custom_trackers = CustomTracker.query.filter_by(user_id=current_user.id, is_active=True).all()
-        custom_values = {}
-        for tracker in custom_trackers:
-            value = request.form.get(f'custom_{tracker.id}')
-            if value:
-                custom_values[tracker.id] = value
-        
-        try:
-            if existing_entry:
-                # Обновление существующей записи
-                existing_entry.mood = mood
-                existing_entry.irritability = irritability
-                existing_entry.anxiety = anxiety
-                existing_entry.energy = energy
-                existing_entry.sleep_hours = sleep_hours
-                existing_entry.sleep_quality = sleep_quality
-                existing_entry.day_type = day_type
-                existing_entry.notes = notes
-                existing_entry.medications_taken = medications_taken
-                existing_entry.custom_values = custom_values
-                existing_entry.updated_at = datetime.utcnow()
-            else:
-                # Создание новой записи
-                entry = DailyEntry(
-                    user_id=current_user.id,
-                    date=today,
-                    mood=mood,
-                    irritability=irritability,
-                    anxiety=anxiety,
-                    energy=energy,
-                    sleep_hours=sleep_hours,
-                    sleep_quality=sleep_quality,
-                    day_type=day_type,
-                    notes=notes,
-                    medications_taken=medications_taken,
-                    custom_values=custom_values
-                )
-                db.session.add(entry)
-            
-            db.session.commit()
-            
-            # Проверка предупреждений
-            check_alerts(current_user.id)
-            
-            flash('Запись сохранена успешно!', 'success')
-            return redirect(url_for('dashboard'))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash('Ошибка сохранения записи. Попробуйте позже.', 'error')
-    
-    # Получение пользовательских трекеров
-    custom_trackers = CustomTracker.query.filter_by(user_id=current_user.id, is_active=True).all()
-    
-    # Получение медикаментов
-    medications = Medication.query.filter_by(user_id=current_user.id, is_active=True).all()
-    
-    return render_template('daily_entry.html',
-                         entry=existing_entry,
-                         custom_trackers=custom_trackers,
-                         medications=medications,
-                         today=today)
-
-# ========== ВИЗУАЛИЗАЦИЯ ==========
-
-@app.route('/analytics')
-@login_required
-def analytics():
-    """Аналитика и графики"""
-    period = request.args.get('period', '30')  # days
-    
-    # Получение данных
-    entries = DailyEntry.query.filter_by(user_id=current_user.id)\
-                             .filter(DailyEntry.date >= datetime.now().date() - timedelta(days=int(period)))\
-                             .order_by(DailyEntry.date.asc()).all()
-    
-    # Подготовка данных для графиков
-    chart_data = prepare_chart_data(entries)
-    
-    # Статистика
-    stats = calculate_statistics(entries)
-    
-    return render_template('analytics.html',
-                         chart_data=chart_data,
-                         stats=stats,
-                         period=period)
-
-@app.route('/export-data')
-@login_required
-def export_data():
-    """Экспорт данных"""
-    format = request.args.get('format', 'csv')
-    period = request.args.get('period', 'all')
-    
-    # Получение данных
-    query = DailyEntry.query.filter_by(user_id=current_user.id)
-    if period != 'all':
-        days = int(period)
-        query = query.filter(DailyEntry.date >= datetime.now().date() - timedelta(days=days))
-    
-    entries = query.order_by(DailyEntry.date.asc()).all()
-    
-    if format == 'csv':
-        return export_csv(entries)
-    elif format == 'json':
-        return export_json(entries)
-    elif format == 'pdf':
-        return export_pdf(entries)
-    
-    flash('Неверный формат экспорта', 'error')
-    return redirect(url_for('analytics'))
-
-# ========== ПСИХООБРАЗОВАНИЕ ==========
-
-@app.route('/psychoeducation')
-@login_required
-def psychoeducation():
-    """Раздел психообразования"""
-    category = request.args.get('category', 'all')
-    
-    # Материалы по психообразованию
-    materials = get_psychoeducation_materials(category)
-    
-    return render_template('psychoeducation.html', materials=materials)
-
-@app.route('/therapy-tools')
-@login_required
-def therapy_tools():
-    """Инструменты психотерапии"""
-    tool_type = request.args.get('type', 'cbt')
-    
-    return render_template('therapy_tools.html', tool_type=tool_type)
-
-@app.route('/journal', methods=['GET', 'POST'])
-@login_required
-def journal():
-    """Дневник мыслей"""
-    if request.method == 'POST':
-        note_type = request.form.get('note_type', 'thought')
-        title = request.form.get('title', '')
-        content = request.form.get('content', '')
-        
-        # Специфические поля для разных типов
-        if note_type == 'cbt':
-            situation = request.form.get('situation', '')
-            automatic_thoughts = request.form.get('automatic_thoughts', '')
-            emotions = request.form.get('emotions', '')
-            cognitive_distortions = request.form.get('cognitive_distortions', '')
-            rational_response = request.form.get('rational_response', '')
-        else:
-            situation = automatic_thoughts = emotions = cognitive_distortions = rational_response = None
-        
-        note = TherapyNote(
-            user_id=current_user.id,
-            note_type=note_type,
-            title=title,
-            content=content,
-            situation=situation,
-            automatic_thoughts=automatic_thoughts,
-            emotions=emotions,
-            cognitive_distortions=cognitive_distortions,
-            rational_response=rational_response,
-            date_created=datetime.now().date()
-        )
-        
-        try:
-            db.session.add(note)
-            db.session.commit()
-            flash('Запись сохранена!', 'success')
-            return redirect(url_for('journal'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Ошибка сохранения записи', 'error')
-    
-    # Получение существующих записей
-    notes = TherapyNote.query.filter_by(user_id=current_user.id)\
-                            .order_by(TherapyNote.created_at.desc()).all()
-    
-    return render_template('journal.html', notes=notes)
-
-# ========== СКРИНИНГИ ==========
-
-@app.route('/screening')
-@login_required
-def screening():
-    """Скрининговые тесты"""
-    return render_template('screening.html')
-
-@app.route('/screening/<test_type>', methods=['GET', 'POST'])
-@login_required
-def screening_test(test_type):
-    """Прохождение скринингового теста"""
-    if test_type not in ['bdi_ii', 'bss']:
-        flash('Неверный тип теста', 'error')
-        return redirect(url_for('screening'))
-    
-    if request.method == 'POST':
-        # Обработка результатов теста
-        responses = {}
-        total_score = 0
-        
-        if test_type == 'bdi_ii':
-            # BDI-II: 21 вопрос
-            for i in range(1, 22):
-                response = request.form.get(f'q{i}', type=int)
-                if response is not None:
-                    responses[f'q{i}'] = response
-                    total_score += response
-        
-        elif test_type == 'bss':
-            # BSS: 19 вопросов
-            for i in range(1, 20):
-                response = request.form.get(f'q{i}', type=int)
-                if response is not None:
-                    responses[f'q{i}'] = response
-                    total_score += response
-        
-        # Определение тяжести
-        severity = get_severity_level(test_type, total_score)
-        interpretation = get_test_interpretation(test_type, total_score, severity)
-        recommendations = get_recommendations(test_type, severity)
-        
-        # Сохранение результата
-        result = ScreeningResult(
-            user_id=current_user.id,
-            test_type=test_type,
-            total_score=total_score,
-            responses=responses,
-            severity=severity,
-            interpretation=interpretation,
-            recommendations=recommendations
-        )
-        
-        try:
-            db.session.add(result)
-            db.session.commit()
-            
-            flash(f'Тест завершен! Ваш балл: {total_score}', 'success')
-            return redirect(url_for('screening_results', result_id=result.id))
-            
-        except Exception as e:
-            db.session.rollback()
-            flash('Ошибка сохранения результатов', 'error')
-    
-    # Получение вопросов теста
-    questions = get_test_questions(test_type)
-    
-    return render_template('screening_test.html',
-                         test_type=test_type,
-                         questions=questions)
-
-@app.route('/screening/results/<int:result_id>')
-@login_required
-def screening_results(result_id):
-    """Просмотр результатов скрининга"""
-    result = ScreeningResult.query.filter_by(id=result_id, user_id=current_user.id).first_or_404()
-    return render_template('screening_results.html', result=result)
-
-# ========== НАСТРОЙКИ ==========
-
-@app.route('/settings')
-@login_required
-def settings():
-    """Настройки пользователя"""
-    return render_template('settings.html')
-
-@app.route('/settings/custom-trackers', methods=['GET', 'POST'])
-@login_required
-def custom_trackers():
-    """Управление пользовательскими трекерами"""
-    if request.method == 'POST':
-        action = request.form.get('action')
-        
-        if action == 'add':
-            # Добавление нового трекера
-            name = request.form.get('name')
-            description = request.form.get('description')
-            tracker_type = request.form.get('type')
-            
-            tracker = CustomTracker(
-                user_id=current_user.id,
-                name=name,
-                description=description,
-                type=tracker_type
-            )
-            
-            # Дополнительные настройки для слайдера
-            if tracker_type == 'slider':
-                tracker.min_value = request.form.get('min_value', 0, type=int)
-                tracker.max_value = request.form.get('max_value', 10, type=int)
-            
-            try:
-                db.session.add(tracker)
-                db.session.commit()
-                flash('Трекер добавлен!', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash('Ошибка добавления трекера', 'error')
-        
-        elif action == 'delete':
-            # Удаление трекера
-            tracker_id = request.form.get('tracker_id', type=int)
-            tracker = CustomTracker.query.filter_by(id=tracker_id, user_id=current_user.id).first()
-            
-            if tracker:
-                tracker.is_active = False
-                db.session.commit()
-                flash('Трекер удален', 'success')
-    
-    # Получение трекеров пользователя
-    trackers = CustomTracker.query.filter_by(user_id=current_user.id, is_active=True).all()
-    
-    return render_template('custom_trackers.html', trackers=trackers)
-
-@app.route('/settings/medications', methods=['GET', 'POST'])
-@login_required
-def medications():
-    """Управление медикаментами"""
-    if request.method == 'POST':
-        action = request.form.get('action')
-        
-        if action == 'add':
-            name = request.form.get('name')
-            dosage = request.form.get('dosage')
-            frequency = request.form.get('frequency')
-            
-            medication = Medication(
-                user_id=current_user.id,
-                name=name,
-                dosage=dosage,
-                frequency=frequency,
-                morning=bool(request.form.get('morning')),
-                afternoon=bool(request.form.get('afternoon')),
-                evening=bool(request.form.get('evening')),
-                night=bool(request.form.get('night'))
-            )
-            
-            try:
-                db.session.add(medication)
-                db.session.commit()
-                flash('Медикамент добавлен!', 'success')
-            except Exception as e:
-                db.session.rollback()
-                flash('Ошибка добавления медикамента', 'error')
-        
-        elif action == 'delete':
-            med_id = request.form.get('med_id', type=int)
-            medication = Medication.query.filter_by(id=med_id, user_id=current_user.id).first()
-            
-            if medication:
-                medication.is_active = False
-                db.session.commit()
-                flash('Медикамент удален', 'success')
-    
-    medications = Medication.query.filter_by(user_id=current_user.id, is_active=True).all()
-    return render_template('medications.html', medications=medications)
-
-# ========== API ==========
-
-@app.route('/api/daily-entry/<date>')
-@login_required
-def api_get_daily_entry(date):
-    """Получение записи за конкретную дату"""
+def get_dashboard_data():
+    """Получение данных для дашборда"""
     try:
-        entry_date = datetime.strptime(date, '%Y-%m-%d').date()
-        entry = DailyEntry.query.filter_by(user_id=current_user.id, date=entry_date).first()
+        db = get_db()
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
         
-        if entry:
-            return jsonify({
-                'success': True,
-                'entry': {
-                    'id': entry.id,
-                    'date': entry.date.isoformat(),
-                    'mood': entry.mood,
-                    'irritability': entry.irritability,
-                    'anxiety': entry.anxiety,
-                    'energy': entry.energy,
-                    'sleep_hours': entry.sleep_hours,
-                    'sleep_quality': entry.sleep_quality,
-                    'day_type': entry.day_type,
-                    'notes': entry.notes,
-                    'medications_taken': entry.medications_taken,
-                    'custom_values': entry.custom_values
-                }
-            })
-        else:
-            return jsonify({'success': False, 'message': 'Запись не найдена'})
+        if not start_date_str or not end_date_str:
+            return jsonify({'success': False, 'message': 'Не указаны даты'})
+        
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        entries = db.get_entries_period(current_user.id, start_date, end_date)
+        
+        # Определение текущей фазы на основе статистики
+        current_phase = 'normal'
+        current_phase_explanation = []
+        if entries:
+            last_entry = entries[-1]
+            # Используем функцию определения фазы с учетом статистики
+            current_phase, current_phase_explanation = determine_phase_with_statistics(
+                current_entry={
+                    'depressive_state': last_entry.get('depressive_state', 'none'),
+                    'manic_state': last_entry.get('manic_state', 'none'),
+                    'sleep_hours': float(last_entry.get('sleep_hours', 0) or 0),
+                    'entry_date': last_entry.get('entry_date')
+                },
+                recent_entries=entries[:-1]  # Все записи кроме последней
+            )
+        
+        phase_chart_data = [{'date': e['entry_date'].strftime('%Y-%m-%d'), 'phase': e.get('day_type', 'normal')} for e in entries]
+        
+        chart_data = {
+            'dates': [e['entry_date'].strftime('%Y-%m-%d') for e in entries],
+            'mood': [e.get('mood', 5) for e in entries],
+            'irritability': [e.get('irritability', 0) for e in entries],
+            'anxiety': [e.get('anxiety', 0) for e in entries],
+            'energy': [e.get('energy', 5) for e in entries],
+            'sleep_hours': [float(e.get('sleep_hours', 0)) for e in entries]
+        }
+        
+        recent_entries = [{
+            'date': e['entry_date'].strftime('%Y-%m-%d'),
+            'phase': e.get('day_type', 'normal'),
+            'mood': e.get('mood', 5),
+            'energy': e.get('energy', 5),
+            'sleep_hours': float(e.get('sleep_hours', 0)),
+            'notes': e.get('notes', '')
+        } for e in entries]
+        
+        user_medications = db.get_user_medications(current_user.id)
+        medications_data = {med['id']: {
+            'name': med['name'],
+            'dosage_mg': med.get('dosage_mg'),
+            'time_of_day': med.get('time_of_day'),
+            'frequency': med.get('frequency', 'daily'),
+            'intakes': []
+        } for med in user_medications}
+        
+        for entry in entries:
+            entry_date = entry['entry_date'].strftime('%Y-%m-%d')
+            med_intakes = {mi['med_id']: mi for mi in db.get_medication_intakes(entry['id'])}
+            for med_id in medications_data:
+                medications_data[med_id]['intakes'].append({
+                    'date': entry_date,
+                    'taken': med_intakes.get(med_id, {}).get('taken') != 'none'
+                })
+        
+        sleep_data = {
+            'dates': [e['entry_date'].strftime('%Y-%m-%d') for e in entries],
+            'hours': [float(e.get('sleep_hours', 0)) for e in entries],
+            'quality': [e.get('sleep_quality') or 'average' for e in entries]
+        }
+        
+        return jsonify({
+            'success': True,
+            'current_phase': current_phase,
+            'phase_chart_data': phase_chart_data,
+            'chart_data': chart_data,
+            'recent_entries': recent_entries,
+            'medications_data': medications_data,
+            'sleep_data': sleep_data
+        })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/alerts/mark-read/<int:alert_id>', methods=['POST'])
+
+@bp.route('/entry')
 @login_required
-def api_mark_alert_read(alert_id):
-    """Отметить предупреждение как прочитанное"""
-    alert = Alert.query.filter_by(id=alert_id, user_id=current_user.id).first()
-    
-    if alert:
-        alert.is_read = True
-        db.session.commit()
-        return jsonify({'success': True})
-    
-    return jsonify({'success': False, 'message': 'Предупреждение не найдено'})
+def entry():
+    """Страница ввода/редактирования дневной записи"""
+    db = get_db()
+    today = date.today()
 
-# ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+    # Справочники для формы
+    medications = db.get_user_medications(current_user.id)
+    custom_trackers = db.get_user_trackers(current_user.id)
+    custom_states = db.get_user_custom_states(current_user.id)
 
-def get_trend_data(user_id):
-    """Получение данных трендов для дашборда"""
-    entries = DailyEntry.query.filter_by(user_id=user_id)\
-                            .filter(DailyEntry.date >= datetime.now().date() - timedelta(days=14))\
-                            .order_by(DailyEntry.date.asc()).all()
-    
-    if not entries:
-        return {}
-    
-    # Расчет трендов
-    mood_trend = calculate_trend([e.mood for e in entries if e.mood is not None])
-    anxiety_trend = calculate_trend([e.anxiety for e in entries if e.anxiety is not None])
-    energy_trend = calculate_trend([e.energy for e in entries if e.energy is not None])
-    
-    return {
-        'mood': {'trend': mood_trend, 'current': entries[-1].mood},
-        'anxiety': {'trend': anxiety_trend, 'current': entries[-1].anxiety},
-        'energy': {'trend': energy_trend, 'current': entries[-1].energy}
-    }
+    return render_template(
+        'entry.html',
+        today=today,
+        medications=medications,
+        custom_trackers=custom_trackers,
+        custom_states=custom_states,
+    )
 
-def calculate_trend(values):
-    """Расчет тренда (рост/падение/стабильность)"""
-    if len(values) < 2:
-        return 'stable'
-    
-    first_half = values[:len(values)//2]
-    second_half = values[len(values)//2:]
-    
-    avg_first = sum(first_half) / len(first_half)
-    avg_second = sum(second_half) / len(second_half)
-    
-    diff = avg_second - avg_first
-    
-    if diff > 1:
-        return 'increasing'
-    elif diff < -1:
-        return 'decreasing'
-    else:
-        return 'stable'
+@bp.route('/save_entry', methods=['POST'])
+@login_required
+def save_entry():
+    """Сохранение ежедневной записи"""
+    try:
+        db = get_db()
+        data = request.json
+        entry_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
 
-def check_alerts(user_id):
-    """Проверка и создание предупреждений"""
-    # Получение последних записей
-    recent_entries = DailyEntry.query.filter_by(user_id=user_id)\
-                                   .order_by(DailyEntry.date.desc())\
-                                   .limit(7).all()
-    
-    if not recent_entries:
-        return
-    
-    # Правило 1: Продолжительная депрессия
-    depressive_days = sum(1 for entry in recent_entries if entry.mood and entry.mood <= 3)
-    if depressive_days >= 5:
-        create_alert(user_id, 'mood', 'Продолжительная депрессия', 
-                    'Ваше настроение остается низким более 5 дней. Рассмотрите консультацию со специалистом.')
-    
-    # Правило 2: Высокая тревога
-    high_anxiety_days = sum(1 for entry in recent_entries if entry.anxiety and entry.anxiety >= 8)
-    if high_anxiety_days >= 3:
-        create_alert(user_id, 'anxiety', 'Высокий уровень тревоги', 
-                    'Уровень тревоги остается высоким. Попробуйте техники релаксации.')
-    
-    # Правило 3: Нарушения сна
-    poor_sleep_days = sum(1 for entry in recent_entries 
-                         if entry.sleep_quality and entry.sleep_quality <= 3)
-    if poor_sleep_days >= 4:
-        create_alert(user_id, 'sleep', 'Проблемы со сном', 
-                    'Качество сна снижено. Важность гигиены сна возрастает.')
-
-def create_alert(user_id, alert_type, title, message, priority='medium'):
-    """Создание предупреждения"""
-    # Проверка на существующее непрочитанное предупреждение
-    existing = Alert.query.filter_by(
-        user_id=user_id,
-        alert_type=alert_type,
-        is_read=False,
-        title=title
-    ).first()
-    
-    if not existing:
-        alert = Alert(
-            user_id=user_id,
-            alert_type=alert_type,
-            title=title,
-            message=message,
-            priority=priority
+        entry_id = db.create_entry(
+            user_id=current_user.id,
+            entry_date=entry_date,
+            mood=int(data.get('mood', 5)),
+            irritability=int(data.get('irritability', 0)),
+            anxiety=int(data.get('anxiety', 0)),
+            energy=int(data.get('energy', 5)),
+            sleep_hours=float(data.get('sleep_hours', 0)),
+            sleep_quality=data.get('sleep_quality', 'average'),
+            notes=data.get('notes', ''),
+            depressive_state=data.get('depressive_state', 'none'),
+            manic_state=data.get('manic_state', 'none'),
+            irritable_state=data.get('irritable_state', 'none'),
+            anxious_state=data.get('anxious_state', 'none'),
+            psychotic_symptoms=bool(data.get('psychotic_symptoms', False)),
+            psychotherapy=bool(data.get('psychotherapy', False)),
         )
-        db.session.add(alert)
-        db.session.commit()
+        
+        if not entry_id:
+            existing_entry = db.get_entry(current_user.id, entry_date)
+            entry_id = existing_entry['id']
 
-def prepare_chart_data(entries):
-    """Подготовка данных для графиков"""
-    if not entries:
-        return {}
-    
-    dates = [entry.date.strftime('%Y-%m-%d') for entry in entries]
-    
-    return {
-        'dates': dates,
-        'mood': [entry.mood for entry in entries],
-        'anxiety': [entry.anxiety for entry in entries],
-        'energy': [entry.energy for entry in entries],
-        'irritability': [entry.irritability for entry in entries],
-        'sleep_quality': [entry.sleep_quality for entry in entries],
-        'sleep_hours': [entry.sleep_hours for entry in entries]
-    }
+        analysis_start = entry_date - timedelta(days=6)
+        recent_entries = db.get_entries_period(current_user.id, analysis_start, entry_date)
+        
+        day_type, explanation = determine_phase_with_statistics(
+            current_entry={
+                'depressive_state': data.get('depressive_state', 'none'),
+                'manic_state': data.get('manic_state', 'none'),
+                'sleep_hours': float(data.get('sleep_hours', 0) or 0),
+                'entry_date': entry_date
+            },
+            recent_entries=recent_entries
+        )
 
-def calculate_statistics(entries):
-    """Расчет статистики"""
-    if not entries:
-        return {}
-    
-    import numpy as np
-    
-    stats = {}
-    for metric in ['mood', 'anxiety', 'energy', 'irritability', 'sleep_quality']:
-        values = [getattr(entry, metric) for entry in entries if getattr(entry, metric) is not None]
-        if values:
-            stats[metric] = {
-                'mean': round(np.mean(values), 2),
-                'std': round(np.std(values), 2),
-                'min': min(values),
-                'max': max(values)
-            }
-    
-    return stats
-
-def export_csv(entries):
-    """Экспорт в CSV"""
-    import csv
-    from io import StringIO
-    
-    output = StringIO()
-    writer = csv.writer(output)
-    
-    # Заголовки
-    writer.writerow(['Дата', 'Настроение', 'Тревога', 'Энергия', 'Раздражительность', 
-                    'Часы сна', 'Качество сна', 'Тип дня', 'Примечания'])
-    
-    # Данные
-    for entry in entries:
-        writer.writerow([
-            entry.date.strftime('%Y-%m-%d'),
-            entry.mood,
-            entry.anxiety,
-            entry.energy,
-            entry.irritability,
-            entry.sleep_hours,
-            entry.sleep_quality,
-            entry.day_type,
-            entry.notes
-        ])
-    
-    from flask import Response
-    return Response(
-        output.getvalue(),
-        mimetype='text/csv',
-        headers={'Content-Disposition': 'attachment; filename=stabil_data.csv'}
-    )
-
-def export_json(entries):
-    """Экспорт в JSON"""
-    data = []
-    for entry in entries:
-        data.append({
-            'date': entry.date.isoformat(),
-            'mood': entry.mood,
-            'anxiety': entry.anxiety,
-            'energy': entry.energy,
-            'irritability': entry.irritability,
-            'sleep_hours': entry.sleep_hours,
-            'sleep_quality': entry.sleep_quality,
-            'day_type': entry.day_type,
-            'notes': entry.notes,
-            'custom_values': entry.custom_values
+        db.update_day_type(entry_id, day_type)
+        
+        for med_id, taken in data.get('medications', {}).items():
+            db.add_medication_intake(entry_id, int(med_id), 'full' if taken else 'none')
+        
+        for tracker_id, value in data.get('custom_values', {}).items():
+            db.add_custom_value(entry_id, int(tracker_id), str(value))
+        
+        for state_id, value in data.get('custom_state_values', {}).items():
+            db.add_custom_state_value(entry_id, int(state_id), str(value))
+        
+        explanation_display = []
+        for exp in explanation:
+            for k, v in EXPLANATION_TEXT.items():
+                exp = exp.replace(k, v)
+            explanation_display.append(exp)
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Запись сохранена', 
+            'day_type': day_type,
+            'day_type_explanation': explanation_display
         })
-    
-    from flask import Response
-    return Response(
-        json.dumps(data, ensure_ascii=False, indent=2),
-        mimetype='application/json',
-        headers={'Content-Disposition': 'attachment; filename=stabil_data.json'}
-    )
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
-def get_test_questions(test_type):
-    """Получение вопросов для скрининговых тестов"""
-    if test_type == 'bdi_ii':
-        return [
-            {"id": i, "text": f"Вопрос {i} BDI-II", "options": [
-                {"value": 0, "text": "Ни разу"},
-                {"value": 1, "text": "Немного"},
-                {"value": 2, "text": "Умеренно"},
-                {"value": 3, "text": "Сильно"}
-            ]} for i in range(1, 22)
-        ]
-    elif test_type == 'bss':
-        return [
-            {"id": i, "text": f"Вопрос {i} BSS", "options": [
-                {"value": 0, "text": "Нет"},
-                {"value": 1, "text": "Да, но не в последний год"},
-                {"value": 2, "text": "Да, в последний год"}
-            ]} for i in range(1, 20)
-        ]
-    return []
+@bp.route('/get_entry/<date>')
+@login_required
+def get_entry(date):
+    """Получение записи за конкретную дату"""
+    try:
+        db = get_db()
+        entry_date = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        entry = db.get_entry(current_user.id, entry_date)
+        if not entry:
+            return jsonify({'exists': False})
+        
+        # Получение приемов лекарств (теперь просто да/нет)
+        med_intakes = db.get_medication_intakes(entry['id'])
+        medications = {str(m['med_id']): m['taken'] != 'none' for m in med_intakes}
+        
+        # Получение кастомных значений
+        custom_values_data = db.get_custom_values(entry['id'])
+        custom_values = {str(cv['tracker_id']): cv['value'] for cv in custom_values_data}
+        
+        # Получение значений пользовательских состояний
+        custom_state_values_data = db.get_custom_state_values(entry['id'])
+        custom_state_values = {str(csv['state_id']): csv['value'] for csv in custom_state_values_data}
+        
+        return jsonify({
+            'exists': True,
+            'entry': {
+                'mood': entry['mood'],
+                'irritability': entry['irritability'],
+                'anxiety': entry['anxiety'],
+                'energy': entry['energy'],
+                'sleep_hours': float(entry['sleep_hours']),
+                'sleep_quality': entry['sleep_quality'],
+                'day_type': entry['day_type'],
+                'notes': entry['notes'] or '',
+                'depressive_state': entry.get('depressive_state') or 'none',
+                'manic_state': entry.get('manic_state') or 'none',
+                'irritable_state': entry.get('irritable_state') or 'none',
+                'anxious_state': entry.get('anxious_state') or 'none',
+                'psychotic_symptoms': bool(entry.get('psychotic_symptoms')) if entry.get('psychotic_symptoms') is not None else False,
+                'psychotherapy': bool(entry.get('psychotherapy')) if entry.get('psychotherapy') is not None else False,
+            },
+            'medications': medications,
+            'custom_values': custom_values,
+            'custom_state_values': custom_state_values
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
 
-def get_severity_level(test_type, score):
-    """Определение уровня тяжести по результатам теста"""
-    if test_type == 'bdi_ii':
-        if score <= 13:
-            return 'minimal'
-        elif score <= 19:
-            return 'mild'
-        elif score <= 28:
-            return 'moderate'
-        else:
-            return 'severe'
-    elif test_type == 'bss':
-        if score <= 2:
-            return 'low'
-        elif score <= 5:
-            return 'moderate'
-        else:
-            return 'high'
-    return 'unknown'
+@bp.route('/add_medication', methods=['POST'])
+@login_required
+def add_medication():
+    """Добавление нового лекарства"""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': 'Введите название лекарства'})
+        
+        med_id = get_db().create_medication(current_user.id, name, data.get('dosage_mg'), data.get('time_of_day'), data.get('frequency', 'daily'))
+        return jsonify({'success': True, 'medication': {'id': med_id, 'name': name, 'dosage_mg': data.get('dosage_mg'), 'time_of_day': data.get('time_of_day'), 'frequency': data.get('frequency', 'daily')}})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
-def get_test_interpretation(test_type, score, severity):
-    """Получение интерпретации результатов теста"""
-    interpretations = {
-        'bdi_ii': {
-            'minimal': 'Минимальные проявления депрессии',
-            'mild': 'Легкая депрессия',
-            'moderate': 'Умеренная депрессия',
-            'severe': 'Тяжелая депрессия'
-        },
-        'bss': {
-            'low': 'Низкий риск суицидального поведения',
-            'moderate': 'Средний риск суицидального поведения',
-            'high': 'Высокий риск суицидального поведения'
+@bp.route('/add_tracker', methods=['POST'])
+@login_required
+def add_tracker():
+    """Добавление кастомного трекера"""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        if not name:
+            return jsonify({'success': False, 'message': 'Введите название трекера'})
+        
+        tracker_id = get_db().create_custom_tracker(current_user.id, name, data.get('type', 'slider'), int(data.get('min_value', 0)), int(data.get('max_value', 10)))
+        return jsonify({'success': True, 'tracker': {'id': tracker_id, 'name': name, 'type': data.get('type', 'slider'), 'min_value': int(data.get('min_value', 0)), 'max_value': int(data.get('max_value', 10))}})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@bp.route('/add_custom_state', methods=['POST'])
+@login_required
+def add_custom_state():
+    """Добавление пользовательского состояния"""
+    try:
+        db = get_db()
+        data = request.json
+        
+        name = data.get('name', '').strip()
+        mark_type = data.get('mark_type', 'categorical')
+        options = data.get('options') or []
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'Введите название состояния'})
+        
+        # Создаем состояние
+        state_id = db.create_custom_state(current_user.id, name, mark_type)
+        
+        saved_options = []
+        if mark_type == 'multi_checkbox':
+            for pos, raw_label in enumerate([l.strip() for l in options if l and l.strip()]):
+                db.create_custom_state_option(state_id, raw_label, pos)
+                saved_options.append(raw_label)
+        
+        return jsonify({
+            'success': True,
+            'state': {'id': state_id, 'name': name, 'mark_type': mark_type, 'options': saved_options if mark_type == 'multi_checkbox' else None}
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@bp.route('/update_custom_state', methods=['POST'])
+@login_required
+def update_custom_state():
+    """Обновление пользовательского состояния"""
+    try:
+        db = get_db()
+        data = request.json
+        
+        state_id = data.get('state_id')
+        name = data.get('name', '').strip()
+        mark_type = data.get('mark_type', 'categorical')
+        options = data.get('options') or []
+        
+        if not state_id or not name:
+            return jsonify({'success': False, 'message': 'Не указаны обязательные поля'})
+        
+        # Обновляем состояние
+        db.update_custom_state(state_id, current_user.id, name, mark_type)
+        
+        saved_options = []
+        if mark_type == 'multi_checkbox':
+            db.delete_custom_state_options(state_id)
+            for pos, label in enumerate([l.strip() for l in options if l and l.strip()]):
+                db.create_custom_state_option(state_id, label, pos)
+                saved_options.append(label)
+        
+        return jsonify({
+            'success': True,
+            'state': {'id': state_id, 'name': name, 'mark_type': mark_type, 'options': saved_options or None}
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@bp.route('/update_medication', methods=['POST'])
+@login_required
+def update_medication():
+    """Обновление лекарства"""
+    try:
+        db = get_db()
+        data = request.json
+        
+        med_id = data.get('med_id')
+        name = data.get('name', '').strip()
+        dosage_mg = data.get('dosage_mg')
+        time_of_day = data.get('time_of_day')
+        frequency = data.get('frequency', 'daily')
+        
+        if not med_id or not name:
+            return jsonify({'success': False, 'message': 'Не указаны обязательные поля'})
+        
+        db.update_medication(med_id, current_user.id, name, dosage_mg, time_of_day, frequency)
+        
+        return jsonify({
+            'success': True,
+            'medication': {
+                'id': med_id,
+                'name': name,
+                'dosage_mg': dosage_mg,
+                'time_of_day': time_of_day,
+                'frequency': frequency
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@bp.route('/delete_medication', methods=['POST'])
+@login_required
+def delete_medication():
+    """Удаление лекарства пользователя"""
+    try:
+        db = get_db()
+        data = request.json
+        med_id = data.get('med_id')
+
+        if not med_id:
+            return jsonify({'success': False, 'message': 'Не указан идентификатор лекарства'})
+        
+        db.delete_medication(med_id, current_user.id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@bp.route('/analytics')
+@login_required
+def analytics():
+    """Страница аналитики"""
+    return render_template('analytics.html')
+
+@bp.route('/get_analytics_data')
+@login_required
+def get_analytics_data():
+    """Получение данных для аналитики"""
+    try:
+        db = get_db()
+        period = request.args.get('period', '30')
+        
+        period_days = {'7': 6, '30': 29, '90': 89}.get(period, 29)
+        end_date = date.today()
+        start_date = end_date - timedelta(days=period_days)
+        entries = db.get_entries_with_custom_data(current_user.id, start_date, end_date)
+        
+        chart_data = {
+            'dates': [e['entry_date'].strftime('%Y-%m-%d') for e in entries],
+            'mood': [e['mood'] for e in entries],
+            'irritability': [e['irritability'] for e in entries],
+            'anxiety': [e['anxiety'] for e in entries],
+            'energy': [e['energy'] for e in entries],
+            'sleep_hours': [float(e['sleep_hours']) for e in entries],
+            'day_types': [e['day_type'] for e in entries],
+            'medications': {},
+            'custom_trackers': {}
         }
-    }
-    return interpretations.get(test_type, {}).get(severity, 'Интерпретация недоступна')
+        
+        for entry in entries:
+            if entry.get('medications'):
+                for med_data in entry['medications'].split(';'):
+                    if ':' in med_data:
+                        med_name, taken = med_data.split(':', 1)
+                        chart_data['medications'].setdefault(med_name, []).append(taken)
+            
+            if entry.get('custom_values'):
+                for tracker_data in entry['custom_values'].split(';'):
+                    if ':' in tracker_data:
+                        tracker_name, value = tracker_data.split(':', 1)
+                        try:
+                            value = float(value)
+                        except ValueError:
+                            pass
+                        chart_data['custom_trackers'].setdefault(tracker_name, []).append(value)
+        
+        return jsonify({
+            'success': True,
+            'data': chart_data,
+            'period': period
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
-def get_recommendations(test_type, severity):
-    """Получение рекомендаций на основе результатов"""
-    recommendations = {
-        'minimal': 'Продолжайте следить за своим состоянием и поддерживать здоровый образ жизни.',
-        'mild': 'Рассмотрите возможность использования техник самопомощи и обратите внимание на факторы, влияющие на ваше настроение.',
-        'moderate': 'Рекомендуется консультация с психологом или психотерапевтом для разработки стратегий преодоления симптомов.',
-        'severe': 'Необходима срочная консультация с психиатром или обращение в кризисный центр.'
-    }
-    return recommendations.get(severity, 'Обратитесь к специалисту для получения персональных рекомендаций.')
+@bp.route('/delete_custom_state', methods=['POST'])
+@login_required
+def delete_custom_state():
+    """Удаление пользовательского состояния"""
+    try:
+        db = get_db()
+        data = request.json
+        
+        state_id = data.get('state_id')
+        if not state_id:
+            return jsonify({'success': False, 'message': 'Не указан идентификатор состояния'})
+        
+        db.delete_custom_state(state_id, current_user.id)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
-def get_psychoeducation_materials(category):
-    """Получение материалов психообразования"""
-    # Заглушка - в реальном приложении это будет из базы данных
-    materials = [
-        {
-            'title': 'Понимание биполярного расстройства',
-            'category': 'bipolar',
-            'description': 'Основы БАР, симптомы и стратегии управления',
-            'content': '...'
-        },
-        {
-            'title': 'Техники управления тревожностью',
-            'category': 'anxiety',
-            'description': 'Практические методы снижения тревоги',
-            'content': '...'
+@bp.route('/report_settings')
+@login_required
+def report_settings():
+    """Страница настройки отчёта"""
+    return render_template('report_settings.html')
+
+@bp.route('/generate_report')
+@login_required
+def generate_report():
+    """Генерация PDF отчёта"""
+    try:
+        from report_generator import ReportGenerator
+        
+        db = get_db()
+        
+        # Получение параметров
+        start_date_str = request.args.get('start_date')
+        end_date_str = request.args.get('end_date')
+        
+        if not start_date_str or not end_date_str:
+            return jsonify({'success': False, 'message': 'Не указаны даты'}), 400
+        
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        
+        # Проверка дат
+        today = date.today()
+        if start_date > today or end_date > today:
+            return jsonify({'success': False, 'message': 'Нельзя выбирать будущие даты'}), 400
+        
+        if start_date > end_date:
+            return jsonify({'success': False, 'message': 'Начальная дата должна быть раньше конечной'}), 400
+        
+        sections_list = request.args.getlist('sections')
+        sections = {section: True for section in sections_list} if sections_list else {
+            'phase_history': True,
+            'sleep_stats': True,
+            'states_chart': True,
+            'notes': True
         }
-    ]
-    
-    if category != 'all':
-        materials = [m for m in materials if m['category'] == category]
-    
-    return materials
+        
+        generator = ReportGenerator(db, current_user.id, current_user.username)
+        pdf_bytes = generator.generate_report(
+            start_date=start_date,
+            end_date=end_date,
+            sections=sections,
+            comment=request.args.get('comment', '').strip() or None
+        )
+        
+        filename = f'affecta_report_{start_date_str}_{end_date_str}.pdf'
+        return Response(
+            pdf_bytes,
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@bp.route('/export_pdf')
+@login_required
+def export_pdf():
+    """Экспорт отчета в PDF (старый маршрут, перенаправляет на настройку)"""
+    return redirect(url_for('main.report_settings'))

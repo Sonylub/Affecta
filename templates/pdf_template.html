@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет Affecta - {{ start_date }} по {{ end_date }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: white;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4F46E5;
+        }
+        .header h1 {
+            color: #4F46E5;
+            margin: 0;
+            font-size: 24px;
+        }
+        .header p {
+            color: #6B7280;
+            margin: 10px 0 0 0;
+        }
+        .summary {
+            background-color: #F3F4F6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .summary h2 {
+            color: #1F2937;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat {
+            background-color: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #6B7280;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1F2937;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section h2 {
+            color: #1F2937;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        th {
+            background-color: #F9FAFB;
+            font-weight: 600;
+            color: #374151;
+        }
+        tr:hover {
+            background-color: #F9FAFB;
+        }
+        .mood-good { color: #059669; font-weight: bold; }
+        .mood-average { color: #D97706; font-weight: bold; }
+        .mood-bad { color: #DC2626; font-weight: bold; }
+        .day-type-depressive { background-color: #FEE2E2; }
+        .day-type-normal { background-color: #F0FDF4; }
+        .day-type-hypomanic { background-color: #FEF3C7; }
+        .day-type-mixed { background-color: #F3E8FF; }
+        .notes {
+            max-width: 200px;
+            word-wrap: break-word;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #E5E7EB;
+            text-align: center;
+            color: #6B7280;
+            font-size: 12px;
+        }
+        .chart-placeholder {
+            background-color: #F3F4F6;
+            border: 2px dashed #D1D5DB;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            color: #6B7280;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Affecta - Отчет о состоянии</h1>
+        <p>Период: {{ start_date.strftime('%d.%m.%Y') }} - {{ end_date.strftime('%d.%m.%Y') }}</p>
+        <p>Пользователь: {{ username }}</p>
+    </div>
+
+    <div class="summary">
+        <h2>Общая статистика</h2>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">Всего записей</div>
+                <div class="stat-value">{{ entries|length }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Среднее настроение</div>
+                <div class="stat-value">{{ "%.1f"|format(avg_mood) if avg_mood > 0 else "Н/Д" }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Средняя энергия</div>
+                <div class="stat-value">{{ "%.1f"|format(avg_energy) if avg_energy > 0 else "Н/Д" }}</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Средний сон</div>
+                <div class="stat-value">{{ "%.1f ч"|format(avg_sleep) if avg_sleep > 0 else "Н/Д" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Детальные записи</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Настроение</th>
+                    <th>Энергия</th>
+                    <th>Раздраж.</th>
+                    <th>Тревога</th>
+                    <th>Сон (ч)</th>
+                    <th>Качество сна</th>
+                    <th>Тип дня</th>
+                    <th>Заметки</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr class="day-type-{{ entry.day_type }}">
+                    <td>{{ entry.entry_date.strftime('%d.%m.%Y') }}</td>
+                    <td class="{% if entry.mood >= 7 %}mood-good{% elif entry.mood >= 4 %}mood-average{% else %}mood-bad{% endif %}">
+                        {{ entry.mood }}/10
+                    </td>
+                    <td>{{ entry.energy }}/10</td>
+                    <td>{{ entry.irritability }}/10</td>
+                    <td>{{ entry.anxiety }}/10</td>
+                    <td>{{ "%.1f"|format(entry.sleep_hours) }}</td>
+                    <td>
+                        {% if entry.sleep_quality == 'good' %}Хорошее{% elif entry.sleep_quality == 'average' %}Среднее{% else %}Плохое{% endif %}
+                    </td>
+                    <td>
+                        {% if entry.day_type == 'depressive' %}Депрессивный{% elif entry.day_type == 'normal' %}Нормальный{% elif entry.day_type == 'hypomanic' %}Гипоманический{% else %}Смешанный{% endif %}
+                    </td>
+                    <td class="notes">{{ entry.notes or '-' }}</td>
+                </tr>
+                {% endfor %}
+                {% if not entries %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: #6B7280;">Нет данных за выбранный период</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if entries %}
+    <div class="section">
+        <h2>Анализ типов дней</h2>
+        {% set day_types = {} %}
+        {% for entry in entries %}
+            {% set _ = day_types.update({entry.day_type: day_types.get(entry.day_type, 0) + 1}) %}
+        {% endfor %}
+        
+        <table style="max-width: 400px;">
+            <thead>
+                <tr>
+                    <th>Тип дня</th>
+                    <th>Количество</th>
+                    <th>Процент</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for day_type, count in day_types.items() %}
+                <tr>
+                    <td>
+                        {% if day_type == 'depressive' %}Депрессивный{% elif day_type == 'normal' %}Нормальный{% elif day_type == 'hypomanic' %}Гипоманический{% else %}Смешанный{% endif %}
+                    </td>
+                    <td>{{ count }}</td>
+                    <td>{{ "%.1f"|format((count / entries|length) * 100) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Графики и визуализация</h2>
+        <div class="chart-placeholder">
+            <p>📊 Графики настроения, энергии и сна доступны в веб-версии приложения</p>
+            <p style="font-size: 11px; margin-top: 10px;">
+                Перейдите в раздел "Аналитика" на сайте для просмотра интерактивных графиков
+            </p>
+        </div>
+    </div>
+
+    {% if entries %}
+    <div class="section">
+        <h2>Рекомендации</h2>
+        <div style="background-color: #FEF3C7; padding: 15px; border-radius: 8px; border-left: 4px solid #F59E0B;">
+            <p><strong>💡 Подсказка:</strong></p>
+            <ul style="margin-top: 10px; padding-left: 20px;">
+                <li>Старайтесь заполнять данные каждый день для более точного анализа</li>
+                <li>Обратите внимание на связь между сном и настроением</li>
+                <li>Используйте заметки для фиксации важных событий и наблюдений</li>
+                <li>Делитесь отчетами с вашим врачом для более эффективного лечения</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>Отчет сгенерирован автоматически приложением "Affecta"</p>
+        <p>Дата генерации: {{ datetime.now().strftime('%d.%m.%Y %H:%M') }}</p>
+    </div>
+</body>
+</html>

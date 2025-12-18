@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" width="220" height="60">
+  <defs>
+    <!-- Градиенты для элементов -->
+    <radialGradient id="orangeGradient" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#FFB84D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8C42;stop-opacity:1" />
+    </radialGradient>
+    <linearGradient id="purpleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C77DFF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#9D4EDD;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7B2CBF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="tealGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22D3EE;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#06B6D4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891B2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lightBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563EB;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="darkBlueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#2563EB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+    <!-- Градиент для текста -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E3A8A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+    <!-- Тень для текста -->
+    <filter id="textShadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Абстрактный графический элемент -->
+  <g transform="translate(8, 8)">
+    <!-- Центральная сфера (голова/солнце) -->
+    <circle cx="25" cy="18" r="7" fill="url(#orangeGradient)" opacity="0.95"/>
+    <!-- Подсветка на сфере -->
+    <ellipse cx="23" cy="16" rx="2.5" ry="2.5" fill="white" opacity="0.7"/>
+    
+    <!-- Левые элементы (крылья) -->
+    <!-- Верхний левый элемент (фиолетовый) - изгибается вверх и влево -->
+    <path d="M 18 12 Q 8 8 4 14 Q 6 20 12 22 Q 16 18 18 12" 
+          fill="url(#purpleGradient)" opacity="0.85"/>
+    <!-- Нижний левый элемент (бирюзовый) - изгибается вниз и влево -->
+    <path d="M 18 24 Q 8 28 4 34 Q 6 40 12 38 Q 16 32 18 24" 
+          fill="url(#tealGradient)" opacity="0.85"/>
+    
+    <!-- Правые элементы (человеческая фигура) -->
+    <!-- Верхний правый элемент (светло-синий) - изгибается вверх и вправо -->
+    <path d="M 32 8 Q 38 4 44 10 Q 48 16 42 20 Q 36 14 32 8" 
+          fill="url(#lightBlueGradient)" opacity="0.85"/>
+    <!-- Нижний правый элемент (темно-синий) - изгибается вниз и вправо, формирует тело -->
+    <path d="M 32 20 Q 38 24 44 30 Q 48 36 42 40 Q 36 34 32 28 Q 30 24 32 20" 
+          fill="url(#darkBlueGradient)" opacity="0.85"/>
+  </g>
+  
+  <!-- Текст "Affecta" -->
+  <text x="60" y="40" font-family="'Segoe UI', Arial, sans-serif" font-size="30" font-weight="bold" 
+        fill="url(#textGradient)" filter="url(#textShadow)" letter-spacing="1">
+    Affecta
+  </text>
+</svg>
+

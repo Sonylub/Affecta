@@ -1,237 +1,101 @@
 {% extends "base.html" %}
 
-{% block title %}Стабил - Биполярный трекер для студентов{% endblock %}
+{% block title %}Affecta - Биполярный трекер{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Герой секция -->
-        <div class="text-center mb-16">
-            <div class="mb-8">
-                <h1 class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-                    <span class="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        Стабил
-                    </span>
-                </h1>
-                <p class="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-4">
-                    Биполярный трекер для студентов
-                </p>
-                <p class="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
-                    Отслеживайте настроение, тревожность и энергию. Получайте персонализированные рекомендации 
-                    и поддержку на пути к стабильности.
-                </p>
-            </div>
-            
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="{{ url_for('register') }}" 
-                   class="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                    Начать отслеживание
-                    <svg class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                    </svg>
-                </a>
-                
-                <a href="{{ url_for('login') }}" 
-                   class="inline-flex items-center px-8 py-4 border border-gray-300 dark:border-gray-600 text-lg font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                    Войти
-                </a>
-            </div>
+<div class="text-center">
+    <!-- Герой секция -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-lg text-white py-16 px-6 mb-12">
+        <h1 class="text-4xl md:text-6xl font-bold mb-4">
+            <img src="{{ url_for('static', filename='images/affecta-logo.svg') }}" alt="Affecta" class="h-12 w-auto mx-auto mb-4">
+        </h1>
+        <p class="text-xl md:text-2xl mb-8 opacity-90">
+            Ваш персональный биполярный трекер
+        </p>
+        <p class="text-lg mb-8 max-w-2xl mx-auto opacity-80">
+            Отслеживайте настроение, энергию, сон и прием лекарств. 
+            Получайте ценные insights о своем психическом здоровье.
+        </p>
+        <div class="space-x-4">
+            <a href="{{ url_for('main.register') }}" 
+               class="bg-white text-indigo-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold text-lg transition duration-150 inline-block">
+                Начать отслеживание
+            </a>
+            <a href="{{ url_for('main.login') }}" 
+               class="border-2 border-white text-white hover:bg-white hover:text-indigo-600 px-8 py-3 rounded-lg font-semibold text-lg transition duration-150 inline-block">
+                Войти
+            </a>
         </div>
-        
-        <!-- Особенности -->
-        <div class="grid md:grid-cols-3 gap-8 mb-16">
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-8 card-shadow transition-all duration-300 hover:transform hover:-translate-y-2">
-                <div class="text-blue-600 dark:text-blue-400 mb-4">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                    Ежедневный трекинг
-                </h3>
-                <p class="text-gray-600 dark:text-gray-400">
-                    Простые и эффективные инструменты для ежедневного отслеживания настроения, 
-                    тревожности, энергии и сна.
-                </p>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-8 card-shadow transition-all duration-300 hover:transform hover:-translate-y-2">
-                <div class="text-purple-600 dark:text-purple-400 mb-4">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                    Персонализированные рекомендации
-                </h3>
-                <p class="text-gray-600 dark:text-gray-400">
-                    Получайте индивидуальные советы и предупреждения на основе 
-                    ваших данных и коморбидных расстройств.
-                </p>
-            </div>
-            
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-8 card-shadow transition-all duration-300 hover:transform hover:-translate-y-2">
-                <div class="text-green-600 dark:text-green-400 mb-4">
-                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                    Психообразование
-                </h3>
-                <p class="text-gray-600 dark:text-gray-400">
-                    Доступ к материалам по психообразованию, техникам самопомощи 
-                    и инструментам психотерапии.
-                </p>
-            </div>
-        </div>
-        
-        <!-- Дополнительная информация -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 mb-16 card-shadow">
-            <div class="grid md:grid-cols-2 gap-8 items-center">
-                <div>
-                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                        Почему студентам нужен Стабил?
-                    </h2>
-                    <div class="space-y-4 text-gray-600 dark:text-gray-400">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 text-blue-600 dark:text-blue-400 mr-3">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <p>Адаптирован под студенческую среду с учетом особенностей учебы, экзаменов и социальной жизни</p>
-                        </div>
-                        
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 text-blue-600 dark:text-blue-400 mr-3">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <p>Поддержка коморбидных расстройств: тревожности, СДВГ, ПРЛ, депрессии и других</p>
-                        </div>
-                        
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 text-blue-600 dark:text-blue-400 mr-3">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <p>Конфиденциальность и безопасность данных с возможностью анонимного участия в исследованиях</p>
-                        </div>
-                        
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 text-blue-600 dark:text-blue-400 mr-3">
-                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <p>Работает офлайн как PWA - доступен всегда, даже без интернета</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="text-center">
-                    <div class="bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-xl p-8">
-                        <div class="text-6xl mb-4">🧠</div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                            Начните заботиться о себе
-                        </h3>
-                        <p class="text-gray-600 dark:text-gray-400 mb-6">
-                            Первый шаг к стабильности - осознание своих паттернов
-                        </p>
-                        <a href="{{ url_for('register') }}" 
-                           class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-                            Присоединиться к Стабил
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Статистика -->
-        <div class="grid md:grid-cols-4 gap-6 mb-16">
-            <div class="text-center">
-                <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">10K+</div>
-                <div class="text-gray-600 dark:text-gray-400">Активных пользователей</div>
-            </div>
-            <div class="text-center">
-                <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">95%</div>
-                <div class="text-gray-600 dark:text-gray-400">Улучшение осознанности</div>
-            </div>
-            <div class="text-center">
-                <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">24/7</div>
-                <div class="text-gray-600 dark:text-gray-400">Доступность приложения</div>
-            </div>
-            <div class="text-center">
-                <div class="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">100%</div>
-                <div class="text-gray-600 dark:text-gray-400">Конфиденциальность</div>
-            </div>
-        </div>
-        
-        <!-- Призыв к действию -->
-        <div class="text-center">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Готовы начать?
-            </h2>
-            <p class="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-2xl mx-auto">
-                Присоединяйтесь к тысячам студентов, которые уже используют Стабил 
-                для улучшения своего психоэмоционального состояния.
+    </div>
+
+    <!-- Особенности -->
+    <div class="grid md:grid-cols-3 gap-8 mb-12">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="text-4xl mb-4">📊</div>
+            <h3 class="text-xl font-semibold mb-3 text-gray-800">Отслеживание состояния</h3>
+            <p class="text-gray-600">
+                Ежедневное отслеживание настроения, раздражительности, тревожности и энергии по шкале от 0 до 10.
             </p>
-            
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="{{ url_for('register') }}" 
-                   class="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                    Начать бесплатно
-                    <svg class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                    </svg>
-                </a>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="text-4xl mb-4">💊</div>
+            <h3 class="text-xl font-semibold mb-3 text-gray-800">Лекарства</h3>
+            <p class="text-gray-600">
+                Добавляйте свои лекарства и отмечайте прием (полный, половина, не принимал) для каждого дня.
+            </p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <div class="text-4xl mb-4">📈</div>
+            <h3 class="text-xl font-semibold mb-3 text-gray-800">Аналитика</h3>
+            <p class="text-gray-600">
+                Визуализируйте свои данные с помощью интерактивных графиков и выгружайте отчеты в PDF.
+            </p>
+        </div>
+    </div>
+
+    <!-- Как это работает -->
+    <div class="bg-white rounded-lg shadow-md p-8 mb-12">
+        <h2 class="text-3xl font-bold text-gray-800 mb-8">Как это работает</h2>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+            <div class="text-left">
+                <h3 class="text-xl font-semibold mb-4 text-indigo-600">1. Регистрация</h3>
+                <p class="text-gray-600 mb-4">
+                    Создайте аккаунт за минуту. Все ваши данные хранятся безопасно и конфиденциально.
+                </p>
                 
-                <a href="{{ url_for('login') }}" 
-                   class="inline-flex items-center px-8 py-4 border border-gray-300 dark:border-gray-600 text-lg font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 shadow-lg">
-                    Уже есть аккаунт? Войти
-                </a>
+                <h3 class="text-xl font-semibold mb-4 text-indigo-600">2. Ежедневное заполнение</h3>
+                <p class="text-gray-600 mb-4">
+                    Заполняйте форму каждый день, отмечая свое состояние, сон, прием лекарств и заметки.
+                </p>
+            </div>
+            
+            <div class="text-left">
+                <h3 class="text-xl font-semibold mb-4 text-indigo-600">3. Кастомизация</h3>
+                <p class="text-gray-600 mb-4">
+                    Добавляйте свои собственные трекеры для отслеживания дополнительных параметров.
+                </p>
+                
+                <h3 class="text-xl font-semibold mb-4 text-indigo-600">4. Анализ</h3>
+                <p class="text-gray-600">
+                    Просматривайте тренды, выявляйте паттерны и делитесь отчетами с врачом.
+                </p>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    // Плавная прокрутка для якорей
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            document.querySelector(this.getAttribute('href')).scrollIntoView({
-                behavior: 'smooth'
-            });
-        });
-    });
-    
-    // Анимация при прокрутке
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-    
-    // Наблюдение за карточками
-    document.querySelectorAll('.card-shadow').forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
-    });
-</script>
+    <!-- CTA -->
+    <div class="bg-indigo-50 rounded-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Готовы начать?</h2>
+        <p class="text-gray-600 mb-6">
+            Присоединяйтесь к тысячам людей, которые уже отслеживают свое психическое здоровье.
+        </p>
+        <a href="{{ url_for('main.register') }}" 
+           class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition duration-150 inline-block">
+            Создать аккаунт бесплатно
+        </a>
+    </div>
+</div>
 {% endblock %}
