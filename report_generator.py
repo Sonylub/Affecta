@@ -43,6 +43,7 @@ class ReportGenerator:
         self.user_id = user_id
         self.username = username
         self._register_cyrillic_font()
+        self._setup_matplotlib()
     
     def _register_cyrillic_font(self):  # <-- ДОЛЖЕН БЫТЬ С ОТСТУПОМ (4 пробела)
         """Регистрация шрифта с поддержкой кириллицы"""
@@ -100,6 +101,56 @@ class ReportGenerator:
     def _get_font_name(self):
         """Получение имени шрифта с поддержкой кириллицы"""
         return getattr(self, 'font_name', 'Helvetica')
+    
+    def _setup_matplotlib(self):
+        """Настройка matplotlib для корректного отображения кириллицы и улучшения качества"""
+        import platform
+        
+        # Настройка параметров matplotlib для лучшего качества
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams['savefig.dpi'] = 300
+        plt.rcParams['figure.facecolor'] = 'white'
+        plt.rcParams['axes.facecolor'] = 'white'
+        plt.rcParams['font.size'] = 11
+        plt.rcParams['axes.labelsize'] = 12
+        plt.rcParams['axes.titlesize'] = 14
+        plt.rcParams['xtick.labelsize'] = 10
+        plt.rcParams['ytick.labelsize'] = 10
+        plt.rcParams['legend.fontsize'] = 10
+        plt.rcParams['figure.titlesize'] = 16
+        plt.rcParams['lines.linewidth'] = 2.5
+        plt.rcParams['lines.markersize'] = 6
+        plt.rcParams['grid.alpha'] = 0.3
+        plt.rcParams['axes.grid'] = True
+        plt.rcParams['grid.linestyle'] = '--'
+        plt.rcParams['axes.axisbelow'] = True
+        
+        # Настройка шрифта для matplotlib
+        font_paths = []
+        if platform.system() == 'Windows':
+            windows_fonts = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts')
+            font_paths = [
+                os.path.join(windows_fonts, 'arial.ttf'),
+                os.path.join(windows_fonts, 'ARIAL.TTF'),
+                os.path.join(windows_fonts, 'calibri.ttf'),
+            ]
+        else:
+            font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+            ]
+        
+        for font_path in font_paths:
+            if os.path.exists(font_path):
+                try:
+                    from matplotlib import font_manager
+                    font_prop = font_manager.FontProperties(fname=font_path)
+                    plt.rcParams['font.family'] = font_prop.get_name()
+                    break
+                except Exception as e:
+                    print(f"Ошибка настройки шрифта matplotlib {font_path}: {e}")
+                    continue
     
     def generate_report(self, start_date, end_date, sections, comment=None):
         """Генерация PDF отчёта"""
@@ -329,7 +380,8 @@ class ReportGenerator:
     def _create_chart_image(self, fig) -> io.BytesIO:
         """Создание изображения графика для вставки в PDF"""
         img_buffer = io.BytesIO()
-        plt.savefig(img_buffer, format='png', dpi=150, bbox_inches='tight')
+        plt.savefig(img_buffer, format='png', dpi=300, bbox_inches='tight', 
+                   facecolor='white', edgecolor='none', pad_inches=0.2)
         img_buffer.seek(0)
         plt.close()
         return img_buffer
@@ -344,8 +396,9 @@ class ReportGenerator:
             story.append(Spacer(1, 1*cm))
             return
         
-        # Создание графика
-        fig, ax = plt.subplots(figsize=(10, 4))
+        # Создание графика с увеличенным размером
+        fig, ax = plt.subplots(figsize=(12, 5))
+        fig.patch.set_facecolor('white')
         
         # Подготовка данных
         phase_map = {entry['entry_date']: entry.get('day_type', 'normal') for entry in entries}
@@ -378,22 +431,26 @@ class ReportGenerator:
         # Преобразование в числовые значения
         y_values = [phase_values.get(p, 2) if p else None for p in phases]
         
-        # Построение графика
-        ax.plot(dates, y_values, marker='o', linestyle='-', linewidth=2, markersize=4, color='#4F46E5')
+        # Построение графика с более толстыми линиями и крупными маркерами
+        ax.plot(dates, y_values, marker='o', linestyle='-', linewidth=3, markersize=8, 
+               color='#4F46E5', alpha=0.7, zorder=1)
         
-        # Цвета точек
+        # Цвета точек с увеличенным размером
         for i, (d, p) in enumerate(zip(dates, phases)):
             if p:
-                ax.plot(d, phase_values.get(p, 2), 'o', color=phase_colors.get(p, '#6B7280'), markersize=6)
+                ax.plot(d, phase_values.get(p, 2), 'o', color=phase_colors.get(p, '#6B7280'), 
+                       markersize=10, zorder=2, markeredgewidth=1.5, markeredgecolor='white')
         
-        # Настройка осей
+        # Настройка осей с увеличенными шрифтами
         ax.set_ylim(0, 3.5)
         ax.set_yticks([0.5, 1, 2, 3])
-        ax.set_yticklabels(['Смешанная', 'Депрессия', 'Норма', 'Гипомания'])
-        ax.set_xlabel('Дата', fontsize=10)
-        ax.set_ylabel('Фаза', fontsize=10)
-        ax.grid(True, alpha=0.3, linestyle='--')
-        ax.set_title('История фаз за период', fontsize=12, fontweight='bold', pad=10)
+        ax.set_yticklabels(['Смешанная', 'Депрессия', 'Норма', 'Гипомания'], fontsize=11)
+        ax.set_xlabel('Дата', fontsize=13, fontweight='bold')
+        ax.set_ylabel('Фаза', fontsize=13, fontweight='bold')
+        ax.grid(True, alpha=0.4, linestyle='--', linewidth=1)
+        ax.set_title('История фаз за период', fontsize=15, fontweight='bold', pad=15)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         
         # Форматирование дат
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
@@ -416,7 +473,7 @@ class ReportGenerator:
         story.append(Paragraph('История фаз', heading_style))
         
         img_buffer = self._create_chart_image(fig)
-        img = Image(img_buffer, width=16*cm, height=6.4*cm)
+        img = Image(img_buffer, width=17*cm, height=7*cm)
         story.append(img)
         story.append(Spacer(1, 1*cm))
     
@@ -430,8 +487,9 @@ class ReportGenerator:
             story.append(Spacer(1, 1*cm))
             return
         
-        # Создание графика
-        fig, ax = plt.subplots(figsize=(10, 5))
+        # Создание графика с увеличенным размером
+        fig, ax = plt.subplots(figsize=(12, 6))
+        fig.patch.set_facecolor('white')
         
         # Подготовка данных
         dates = [e['entry_date'] for e in entries]
@@ -440,23 +498,25 @@ class ReportGenerator:
         irritability_data = [e.get('irritability', 0) for e in entries]
         anxiety_data = [e.get('anxiety', 0) for e in entries]
         
-        # Построение графиков
-        ax.plot(dates, mood_data, marker='o', linestyle='-', linewidth=2, markersize=3, 
-                color='#10B981', label='Настроение', alpha=0.8)
-        ax.plot(dates, energy_data, marker='s', linestyle='-', linewidth=2, markersize=3, 
-                color='#3B82F6', label='Энергия', alpha=0.8)
-        ax.plot(dates, irritability_data, marker='^', linestyle='-', linewidth=2, markersize=3, 
-                color='#EF4444', label='Раздражительность', alpha=0.8)
-        ax.plot(dates, anxiety_data, marker='v', linestyle='-', linewidth=2, markersize=3, 
-                color='#F59E0B', label='Тревога', alpha=0.8)
+        # Построение графиков с увеличенными маркерами и линиями
+        ax.plot(dates, mood_data, marker='o', linestyle='-', linewidth=3, markersize=7, 
+                color='#10B981', label='Настроение', alpha=0.85, zorder=4)
+        ax.plot(dates, energy_data, marker='s', linestyle='-', linewidth=3, markersize=7, 
+                color='#3B82F6', label='Энергия', alpha=0.85, zorder=3)
+        ax.plot(dates, irritability_data, marker='^', linestyle='-', linewidth=3, markersize=7, 
+                color='#EF4444', label='Раздражительность', alpha=0.85, zorder=2)
+        ax.plot(dates, anxiety_data, marker='v', linestyle='-', linewidth=3, markersize=7, 
+                color='#F59E0B', label='Тревога', alpha=0.85, zorder=1)
         
-        # Настройка осей
+        # Настройка осей с увеличенными шрифтами
         ax.set_ylim(0, 10)
-        ax.set_xlabel('Дата', fontsize=10)
-        ax.set_ylabel('Значение (0-10)', fontsize=10)
-        ax.set_title('График состояний за период', fontsize=12, fontweight='bold', pad=10)
-        ax.grid(True, alpha=0.3, linestyle='--')
-        ax.legend(loc='best', fontsize=9)
+        ax.set_xlabel('Дата', fontsize=13, fontweight='bold')
+        ax.set_ylabel('Значение (0-10)', fontsize=13, fontweight='bold')
+        ax.set_title('График состояний за период', fontsize=15, fontweight='bold', pad=15)
+        ax.grid(True, alpha=0.4, linestyle='--', linewidth=1)
+        ax.legend(loc='best', fontsize=11, framealpha=0.95, edgecolor='gray', fancybox=True)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         
         # Форматирование дат
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
@@ -479,7 +539,7 @@ class ReportGenerator:
         story.append(Paragraph('График состояний', heading_style))
         
         img_buffer = self._create_chart_image(fig)
-        img = Image(img_buffer, width=16*cm, height=8*cm)
+        img = Image(img_buffer, width=17*cm, height=8.5*cm)
         story.append(img)
         story.append(Spacer(1, 1*cm))
     
@@ -537,19 +597,23 @@ class ReportGenerator:
         story.append(Paragraph(quality_text + ' | '.join(quality_parts), styles['Normal']))
         story.append(Spacer(1, 0.5*cm))
         
-        # График сна
-        fig, ax = plt.subplots(figsize=(10, 4))
+        # График сна с улучшенным оформлением
+        fig, ax = plt.subplots(figsize=(12, 5))
+        fig.patch.set_facecolor('white')
         
         dates = [e['entry_date'] for e in entries if e.get('sleep_hours', 0)]
         hours = [float(e.get('sleep_hours', 0) or 0) for e in entries if e.get('sleep_hours', 0)]
         
-        ax.plot(dates, hours, marker='o', linestyle='-', linewidth=2, markersize=4, color='#3B82F6')
-        ax.fill_between(dates, hours, alpha=0.3, color='#3B82F6')
-        ax.set_xlabel('Дата', fontsize=10)
-        ax.set_ylabel('Часы сна', fontsize=10)
-        ax.set_title('График сна за период', fontsize=12, fontweight='bold', pad=10)
-        ax.grid(True, alpha=0.3, linestyle='--')
+        ax.plot(dates, hours, marker='o', linestyle='-', linewidth=3, markersize=8, 
+               color='#3B82F6', zorder=2, markeredgewidth=1.5, markeredgecolor='white')
+        ax.fill_between(dates, hours, alpha=0.25, color='#3B82F6', zorder=1)
+        ax.set_xlabel('Дата', fontsize=13, fontweight='bold')
+        ax.set_ylabel('Часы сна', fontsize=13, fontweight='bold')
+        ax.set_title('График сна за период', fontsize=15, fontweight='bold', pad=15)
+        ax.grid(True, alpha=0.4, linestyle='--', linewidth=1)
         ax.set_ylim(bottom=0)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         
         # Форматирование дат
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
@@ -567,7 +631,7 @@ class ReportGenerator:
         plt.tight_layout()
         
         img_buffer = self._create_chart_image(fig)
-        img = Image(img_buffer, width=16*cm, height=6.4*cm)
+        img = Image(img_buffer, width=17*cm, height=7*cm)
         story.append(img)
         story.append(Spacer(1, 1*cm))
     
@@ -744,65 +808,33 @@ class ReportGenerator:
         heading_style = ParagraphStyle('Heading2', parent=styles['Heading2'], fontSize=16, spaceAfter=10, fontName=font_name)
         story.append(Paragraph('Заметки', heading_style))
         
-        note_style = ParagraphStyle(
-            'Note',
+        # Единый стиль для блока заметки (дата + текст в одном блоке)
+        note_block_style = ParagraphStyle(
+            'NoteBlock',
             parent=styles['Normal'],
             fontSize=10,
             leftIndent=10,
             rightIndent=10,
-            spaceAfter=0,
+            spaceAfter=8,
             spaceBefore=0,
             backColor=HexColor('#F9FAFB'),
             borderColor=HexColor('#F59E0B'),
             borderWidth=1,
-            borderPadding=10,
-            fontName=font_name
-        )
-        
-        # Стиль для даты заметки - убираем borderPadding, чтобы избежать перекрытия
-        date_style = ParagraphStyle(
-            'NoteDate',
-            parent=styles['Normal'],
-            fontSize=11,
+            borderPadding=12,
             fontName=font_name,
-            textColor=HexColor('#4F46E5'),
-            spaceAfter=0,
-            spaceBefore=0,
-            backColor=HexColor('#E0E7FF'),
-            borderColor=HexColor('#4F46E5'),
-            borderWidth=1,
-            borderPadding=0,
-            leftIndent=5,
-            rightIndent=5,
             leading=14
-        )
-        
-        # Стиль для заметки - также убираем borderPadding сверху
-        note_style_updated = ParagraphStyle(
-            'Note',
-            parent=styles['Normal'],
-            fontSize=10,
-            leftIndent=10,
-            rightIndent=10,
-            spaceAfter=0,
-            spaceBefore=0,
-            backColor=HexColor('#F9FAFB'),
-            borderColor=HexColor('#F59E0B'),
-            borderWidth=1,
-            borderPadding=10,
-            fontName=font_name
         )
         
         for entry in entries:
             date_str = entry['entry_date'].strftime('%d.%m.%Y')
             notes = entry.get('notes', '')
-            date_text = f'<b>Дата: {date_str}</b>'
-            story.append(Paragraph(date_text, date_style))
-            # Большой отступ между датой и заметкой, чтобы избежать перекрытия
-            story.append(Spacer(1, 0.8*cm))
-            story.append(Paragraph(self._escape_html(notes), note_style_updated))
+            
+            # Объединяем дату и текст в один блок
+            note_text = f'<b><font color="#4F46E5">Дата: {date_str}</font></b><br/>{self._escape_html(notes)}'
+            story.append(Paragraph(note_text, note_block_style))
+            
             # Отступ между заметками
-            story.append(Spacer(1, 0.5*cm))
+            story.append(Spacer(1, 0.3*cm))
         
         story.append(Spacer(1, 0.5*cm))
     

@@ -5,14 +5,14 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Текущая фаза - главный элемент -->
-    <div class="bg-white rounded-lg shadow-sm p-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 transition-colors">
         <div class="text-center">
             <div class="flex items-center justify-center gap-2 mb-2">
-                <p class="text-sm font-medium text-gray-600">Текущая фаза</p>
+                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Текущая фаза</p>
                 <button 
                     type="button" 
                     id="current-phase-info-btn"
-                    class="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer inline-block"
+                    class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer inline-block"
                     title="Узнать, почему определена эта фаза"
                     style="display: inline-block;"
                 >
@@ -34,15 +34,15 @@
                     <span class="text-gray-600">Норма</span>
                 {% endif %}
             </h2>
-            <p class="text-gray-500 text-sm" id="current-phase-date">Рассчитано на основе последней записи</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm" id="current-phase-date">Рассчитано на основе последней записи</p>
         </div>
     </div>
 
     <!-- Переключатель диапазона дат -->
-    <div class="bg-white rounded-lg shadow-sm p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 transition-colors">
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div class="flex flex-wrap items-center gap-3">
-                <span class="text-sm font-medium text-gray-700">Период:</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Период:</span>
                 <button data-range="7" class="range-btn bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
                     7 дней
                 </button>
@@ -67,41 +67,41 @@
                 Экспорт отчёта
             </a>
         </div>
-        <div id="date-range-display" class="text-sm text-gray-600">
+        <div id="date-range-display" class="text-sm text-gray-600 dark:text-gray-400">
             <!-- Отображается выбранный диапазон -->
         </div>
     </div>
 
     <!-- Фазовый чарт -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">История фаз</h2>
-        <div class="relative" style="height: 120px;">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">История фаз</h2>
+        <div class="relative" style="height: 300px;">
             <canvas id="phaseChart" class="w-full h-full"></canvas>
         </div>
         <div class="mt-4 flex flex-wrap gap-4 justify-center text-sm">
             <div class="flex items-center">
                 <div class="w-4 h-4 bg-red-500 rounded mr-2"></div>
-                <span>Депрессия</span>
+                <span class="text-gray-800 dark:text-gray-200">Депрессия</span>
             </div>
             <div class="flex items-center">
                 <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                <span>Норма</span>
+                <span class="text-gray-800">Норма</span>
             </div>
             <div class="flex items-center">
                 <div class="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-                <span>Гипомания</span>
+                <span class="text-gray-800">Гипомания</span>
             </div>
             <div class="flex items-center">
                 <div class="w-4 h-4 bg-purple-500 rounded mr-2"></div>
-                <span>Смешанная</span>
+                <span class="text-gray-800">Смешанная</span>
             </div>
         </div>
     </div>
 
     <!-- Дашборд сна -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-gray-800">Сон</h2>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Сон</h2>
             <button id="toggle-sleep-chart" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
                 <span id="toggle-sleep-text">Развернуть</span>
             </button>
@@ -120,9 +120,9 @@
     </div>
 
     <!-- Чарты состояний (свернуты по умолчанию) -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
         <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-semibold text-gray-800">Детальная аналитика</h2>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Детальная аналитика</h2>
             <button id="toggle-states-chart" class="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
                 <span id="toggle-states-text">Развернуть</span>
             </button>
@@ -135,8 +135,8 @@
     </div>
 
     <!-- Последние записи -->
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Последние записи</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 transition-colors">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Последние записи</h2>
         <div id="recent-entries" class="space-y-3">
             <!-- Заполняется JavaScript -->
         </div>
@@ -145,11 +145,11 @@
 
 <!-- Модальное окно для выбора произвольного диапазона -->
 <div id="custom-range-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-xl font-semibold text-gray-800 mb-4">Выберите диапазон дат</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 transition-colors">
+        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Выберите диапазон дат</h3>
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Начальная дата</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Начальная дата</label>
                 <input type="date" id="custom-start-date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
             </div>
             <div>

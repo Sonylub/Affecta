@@ -4,36 +4,36 @@
 
 {% block content %}
 <div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-lg shadow-sm p-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Настройка отчёта</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 transition-colors duration-200">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">Настройка отчёта</h1>
         
         <form id="report-settings-form" class="space-y-8">
             <!-- Выбор периода -->
             <div class="section">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Период отчёта</h2>
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Период отчёта</h2>
                 <div class="space-y-4">
                     <div class="flex flex-wrap gap-3">
-                        <label class="flex items-center text-gray-700">
+                        <label class="flex items-center text-gray-700 dark:text-gray-300">
                             <input type="radio" name="period_type" value="preset" checked class="mr-2">
-                            <span class="text-gray-700">Предустановленный период</span>
+                            <span class="text-gray-700 dark:text-gray-300">Предустановленный период</span>
                         </label>
-                        <label class="flex items-center text-gray-700">
+                        <label class="flex items-center text-gray-700 dark:text-gray-300">
                             <input type="radio" name="period_type" value="custom" class="mr-2">
-                            <span class="text-gray-700">Произвольный диапазон</span>
+                            <span class="text-gray-700 dark:text-gray-300">Произвольный диапазон</span>
                         </label>
                     </div>
                     
                     <div id="preset-periods" class="flex flex-wrap gap-3">
-                        <button type="button" data-days="7" class="period-btn bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">
+                        <button type="button" data-days="7" class="period-btn bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 dark:hover:bg-indigo-600 transition">
                             7 дней
                         </button>
-                        <button type="button" data-days="30" class="period-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                        <button type="button" data-days="30" class="period-btn bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                             Месяц
                         </button>
-                        <button type="button" data-days="180" class="period-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                        <button type="button" data-days="180" class="period-btn bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                             6 месяцев
                         </button>
-                        <button type="button" data-days="365" class="period-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                        <button type="button" data-days="365" class="period-btn bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                             Год
                         </button>
                     </div>
@@ -41,17 +41,17 @@
                     <div id="custom-period" class="hidden space-y-4">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Начальная дата</label>
-                                <input type="date" id="custom-start-date" name="custom_start_date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Начальная дата</label>
+                                <input type="date" id="custom-start-date" name="custom_start_date" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Конечная дата</label>
-                                <input type="date" id="custom-end-date" name="custom_end_date" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Конечная дата</label>
+                                <input type="date" id="custom-end-date" name="custom_end_date" class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                             </div>
                         </div>
                     </div>
                     
-                    <div id="period-display" class="text-sm text-gray-600 mt-2">
+                    <div id="period-display" class="text-sm text-gray-600 dark:text-gray-400 mt-2">
                         <!-- Отображается выбранный период -->
                     </div>
                 </div>
@@ -59,39 +59,39 @@
             
             <!-- Выбор разделов -->
             <div class="section">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Разделы отчёта</h2>
-                <p class="text-sm text-gray-600 mb-4">Выберите разделы, которые нужно включить в отчёт:</p>
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Разделы отчёта</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Выберите разделы, которые нужно включить в отчёт:</p>
                 
                 <div class="space-y-3">
-                    <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                    <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors">
                         <input type="checkbox" name="sections" value="phase_history" checked class="mr-3 w-4 h-4 text-indigo-600">
                         <div class="flex-1">
-                            <span class="font-medium text-gray-800">История фаз (график)</span>
-                            <p class="text-sm text-gray-600">Визуализация изменения фаз за выбранный период</p>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">История фаз (график)</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Визуализация изменения фаз за выбранный период</p>
                         </div>
                     </label>
                     
-                    <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                    <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors">
                         <input type="checkbox" name="sections" value="sleep_stats" checked class="mr-3 w-4 h-4 text-indigo-600">
                         <div class="flex-1">
-                            <span class="font-medium text-gray-800">Агрегированная статистика сна</span>
-                            <p class="text-sm text-gray-600">Среднее, минимум, максимум часов сна, качество сна, график</p>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">Агрегированная статистика сна</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Среднее, минимум, максимум часов сна, качество сна, график</p>
                         </div>
                     </label>
                     
-                    <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                    <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors">
                         <input type="checkbox" name="sections" value="states_chart" checked class="mr-3 w-4 h-4 text-indigo-600">
                         <div class="flex-1">
-                            <span class="font-medium text-gray-800">График состояний</span>
-                            <p class="text-sm text-gray-600">График настроения, энергии, раздражительности и тревоги</p>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">График состояний</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">График настроения, энергии, раздражительности и тревоги</p>
                         </div>
                     </label>
                     
-                    <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                    <label class="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors">
                         <input type="checkbox" name="sections" value="notes" checked class="mr-3 w-4 h-4 text-indigo-600">
                         <div class="flex-1">
-                            <span class="font-medium text-gray-800">Текстовые заметки</span>
-                            <p class="text-sm text-gray-600">Заметки за выбранный период в хронологическом порядке</p>
+                            <span class="font-medium text-gray-800 dark:text-gray-200">Текстовые заметки</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">Заметки за выбранный период в хронологическом порядке</p>
                         </div>
                     </label>
                 </div>
@@ -99,22 +99,22 @@
             
             <!-- Комментарий к отчёту -->
             <div class="section">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Комментарий к отчёту (необязательно)</h2>
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Комментарий к отчёту (необязательно)</h2>
                 <textarea 
                     id="report-comment" 
                     name="comment" 
                     rows="4" 
                     placeholder="Введите комментарий, который будет добавлен в начало отчёта..."
-                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-indigo-500 dark:focus:border-indigo-400"
                 ></textarea>
             </div>
             
             <!-- Кнопки действий -->
-            <div class="flex justify-end gap-4 pt-6 border-t border-gray-200">
-                <a href="{{ url_for('main.dashboard') }}" class="px-6 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+            <div class="flex justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ url_for('main.dashboard') }}" class="px-6 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                     Отмена
                 </a>
-                <button type="submit" id="generate-btn" class="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition font-medium">
+                <button type="submit" id="generate-btn" class="px-6 py-2 text-white bg-indigo-600 dark:bg-indigo-500 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition font-medium">
                     Сформировать отчёт
                 </button>
             </div>
@@ -138,11 +138,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let customStartDate = null;
     let customEndDate = null;
     
-    // Установка максимальной даты для календарей
-    const today = new Date();
-    const maxDate = today.toISOString().split('T')[0];
+    // Получение даты последней записи из сервера
+    const lastEntryDateStr = {% if last_entry_date %}'{{ last_entry_date.strftime("%Y-%m-%d") }}'{% else %}null{% endif %};
+    const lastEntryDate = lastEntryDateStr ? new Date(lastEntryDateStr + 'T00:00:00') : new Date();
+    
+    // Используем дату последней записи как максимальную дату, если она есть, иначе сегодняшнюю
+    const maxDate = lastEntryDateStr || new Date().toISOString().split('T')[0];
     document.getElementById('custom-start-date').setAttribute('max', maxDate);
     document.getElementById('custom-end-date').setAttribute('max', maxDate);
+    
+    // Для расчета периодов используем дату последней записи вместо сегодняшней
+    const today = lastEntryDateStr ? new Date(lastEntryDateStr + 'T00:00:00') : new Date();
     
     // Обработка переключения типа периода
     periodTypeRadios.forEach(radio => {
@@ -163,11 +169,11 @@ document.addEventListener('DOMContentLoaded', function() {
     periodBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             periodBtns.forEach(b => {
-                b.classList.remove('bg-indigo-600', 'text-white');
-                b.classList.add('bg-gray-200', 'text-gray-700');
+                b.classList.remove('bg-indigo-600', 'dark:bg-indigo-500', 'text-white');
+                b.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
             });
-            this.classList.remove('bg-gray-200', 'text-gray-700');
-            this.classList.add('bg-indigo-600', 'text-white');
+            this.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+            this.classList.add('bg-indigo-600', 'dark:bg-indigo-500', 'text-white');
             selectedDays = parseInt(this.getAttribute('data-days'));
             updatePeriodDisplay();
         });
@@ -229,14 +235,21 @@ document.addEventListener('DOMContentLoaded', function() {
             endDate = new Date(customEndDate);
         }
         
+        // Нормализация дат (убираем время для корректного сравнения)
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+        
         // Проверка дат
         if (startDate > endDate) {
             alert('Начальная дата должна быть раньше конечной');
             return;
         }
         
-        if (startDate > today || endDate > today) {
-            alert('Нельзя выбирать будущие даты');
+        const maxAllowedDate = lastEntryDateStr ? new Date(lastEntryDateStr + 'T00:00:00') : new Date();
+        maxAllowedDate.setHours(0, 0, 0, 0);
+        if (startDate > maxAllowedDate || endDate > maxAllowedDate) {
+            const maxDateStr = lastEntryDateStr ? new Date(lastEntryDateStr + 'T00:00:00').toLocaleDateString('ru-RU') : 'сегодня';
+            alert(`Нельзя выбирать даты позже последней записи (${maxDateStr})`);
             return;
         }
         

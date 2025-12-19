@@ -87,12 +87,12 @@ function getMoodColor(mood) {
 
 function getDayTypeColor(dayType) {
     const colors = {
-        'depressive': 'bg-red-100 text-red-800',
-        'normal': 'bg-green-100 text-green-800',
-        'hypomanic': 'bg-yellow-100 text-yellow-800',
-        'mixed': 'bg-purple-100 text-purple-800'
+        'depressive': 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200',
+        'normal': 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+        'hypomanic': 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+        'mixed': 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
     };
-    return colors[dayType] || 'bg-gray-100 text-gray-800';
+    return colors[dayType] || 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200';
 }
 
 function toggleElement(elementId, show) {

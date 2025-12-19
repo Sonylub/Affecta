@@ -343,6 +343,77 @@ input[type="radio"]:hover {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    
+    /* Мобильная адаптация для кнопок состояний */
+    .state-btn,
+    .binary-btn,
+    .custom-binary-btn,
+    .custom-cat-btn,
+    .day-type-btn {
+        min-height: 44px; /* Минимальная высота для удобного нажатия */
+        min-width: 44px;
+        padding: 0.625rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Мобильная адаптация для ползунков */
+    input[type="range"] {
+        height: 8px;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Улучшенные отступы на мобильных */
+    .space-y-6 > * + * {
+        margin-top: 1rem;
+    }
+    
+    /* Компактные заголовки */
+    h1 {
+        font-size: 1.5rem;
+        line-height: 1.75rem;
+    }
+    
+    h2 {
+        font-size: 1.125rem;
+        line-height: 1.5rem;
+    }
+    
+    /* Мобильная адаптация для форм */
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    /* Мобильная адаптация для модальных окон */
+    .modal-content {
+        border-radius: 0.5rem;
+        padding: 1.25rem;
+    }
+    
+    /* Компактные карточки на мобильных */
+    .bg-white.rounded-lg.shadow-sm {
+        padding: 1rem;
+    }
+    
+    /* Стили для нижней навигационной панели */
+    nav.fixed.bottom-0 {
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    nav.fixed.bottom-0 a {
+        -webkit-tap-highlight-color: rgba(99, 102, 241, 0.1);
+    }
 }
 
 @media (max-width: 640px) {
@@ -352,6 +423,15 @@ input[type="radio"]:hover {
     
     .chart-container {
         height: 200px;
+    }
+    
+    /* Еще более компактные стили для маленьких экранов */
+    h1 {
+        font-size: 1.25rem;
+    }
+    
+    .bg-white.rounded-lg.shadow-sm {
+        padding: 0.875rem;
     }
 }
 
@@ -440,14 +520,14 @@ input[type="radio"]:hover {
 .custom-state-multi-checkbox input[type="checkbox"] {
     -webkit-appearance: none;
     appearance: none;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     border: 2px solid #D1D5DB;
     border-radius: 4px;
     position: relative;
     cursor: pointer;
     transition: all 0.3s ease;
-    margin-right: 8px;
+    margin-right: 10px;
     flex-shrink: 0;
 }
 
@@ -464,7 +544,7 @@ input[type="radio"]:hover {
     display: flex;
     align-items: center;
     cursor: pointer;
-    padding: 8px 12px;
+    padding: 10px 16px;
     border: 2px solid #E5E7EB;
     border-radius: 6px;
     transition: all 0.2s ease;
@@ -511,22 +591,254 @@ input[type="radio"]:hover {
     background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 }
 
-/* Стили для темной темы (если потребуется в будущем) */
-@media (prefers-color-scheme: dark) {
-    .dark-mode {
-        background-color: #1F2937;
-        color: #F9FAFB;
-    }
-    
-    .dark-mode .bg-white {
-        background-color: #374151 !important;
-    }
-    
-    .dark-mode .text-gray-900 {
-        color: #F9FAFB !important;
-    }
-    
-    .dark-mode .text-gray-600 {
-        color: #D1D5DB !important;
+/* ============================================
+   СТИЛИ ДЛЯ ТЕМНОЙ ТЕМЫ
+   ============================================ */
+
+/* Стили для textarea, select и input - темная тема */
+.dark textarea,
+.dark select,
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]) {
+    background-color: #374151 !important;
+    color: #F9FAFB !important;
+    border-color: #4B5563 !important;
+}
+
+.dark textarea::placeholder,
+.dark input::placeholder {
+    color: #9CA3AF !important;
+    opacity: 1 !important;
+}
+
+.dark select option {
+    background-color: #374151 !important;
+    color: #F9FAFB !important;
+}
+
+/* Дополнительная специфичность для модальных окон в темной теме */
+.dark #addCustomStateModal input[type="text"],
+.dark #addCustomStateModal input[type="number"],
+.dark #addMedicationModal input[type="text"],
+.dark #addMedicationModal input[type="number"],
+.dark #addCustomStateModal select,
+.dark #addMedicationModal select {
+    background-color: #374151 !important;
+    color: #F9FAFB !important;
+    border-color: #4B5563 !important;
+}
+
+/* Кастомные ползунки - темная тема */
+.dark input[type="range"] {
+    background: #4B5563;
+}
+
+.dark input[type="range"]:hover {
+    background: #6B7280;
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+    background: #6366F1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark input[type="range"]::-webkit-slider-thumb:hover {
+    background: #818CF8;
+}
+
+.dark input[type="range"]::-moz-range-thumb {
+    background: #6366F1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark input[type="range"]::-moz-range-thumb:hover {
+    background: #818CF8;
+}
+
+/* Кастомные чекбоксы - темная тема */
+.dark input[type="checkbox"] {
+    border-color: #6B7280;
+    background-color: #374151;
+}
+
+.dark input[type="checkbox"]:checked {
+    background: #6366F1;
+    border-color: #6366F1;
+}
+
+.dark input[type="checkbox"]:hover {
+    border-color: #9CA3AF;
+}
+
+/* Кастомные радиокнопки - темная тема */
+.dark input[type="radio"] {
+    border-color: #6B7280;
+    background-color: #374151;
+}
+
+.dark input[type="radio"]:checked {
+    border-color: #6366F1;
+}
+
+.dark input[type="radio"]:checked::after {
+    background: #6366F1;
+}
+
+.dark input[type="radio"]:hover {
+    border-color: #9CA3AF;
+}
+
+/* Стили для модальных окон - темная тема */
+.dark .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+.dark .modal-content {
+    background-color: #374151;
+    color: #F9FAFB;
+}
+
+/* Стили для таблиц - темная тема */
+.dark .table-hover tbody tr:hover {
+    background-color: #4B5563;
+}
+
+/* Стили для карточек - темная тема */
+.dark .card-hover:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.dark .stat-card {
+    background: linear-gradient(135deg, #374151 0%, #1F2937 100%);
+    border: 1px solid #4B5563;
+}
+
+.dark .stat-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+/* Стили для форм - темная тема */
+.dark .form-label {
+    color: #E5E7EB;
+}
+
+.dark .form-input {
+    background-color: #374151;
+    color: #F9FAFB;
+    border-color: #4B5563;
+}
+
+.dark .form-input:focus {
+    border-color: #6366F1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.dark .form-input.error {
+    border-color: #EF4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* Стили для активных состояний кнопок - темная тема */
+.dark .state-btn.active,
+.dark .binary-btn.active,
+.dark .custom-binary-btn.active,
+.dark .custom-cat-btn.active,
+.dark .day-type-btn.active {
+    background-color: #4338CA;
+    border-color: #6366F1;
+    color: #E0E7FF;
+    font-weight: 500;
+}
+
+/* Обеспечение читаемости текста во всех элементах - темная тема */
+.dark .state-btn,
+.dark .binary-btn,
+.dark .custom-binary-btn,
+.dark .custom-cat-btn,
+.dark .day-type-btn {
+    color: #E5E7EB;
+    background-color: #374151;
+    border-color: #4B5563;
+}
+
+.dark .state-btn:hover,
+.dark .binary-btn:hover,
+.dark .custom-binary-btn:hover,
+.dark .custom-cat-btn:hover,
+.dark .day-type-btn:hover {
+    background-color: #4B5563;
+    color: #F9FAFB;
+    border-color: #6B7280;
+}
+
+/* Пользовательские состояния - темная тема */
+.dark .custom-state-multi-checkbox input[type="checkbox"] {
+    border-color: #6B7280;
+    background-color: #374151;
+}
+
+.dark .custom-state-multi-checkbox input[type="checkbox"]:checked {
+    background-color: #6366F1;
+    border-color: #6366F1;
+}
+
+.dark .custom-state-multi-checkbox label {
+    border-color: #4B5563;
+    background-color: #374151;
+    color: #E5E7EB;
+}
+
+.dark .custom-state-multi-checkbox label:hover {
+    background-color: #4B5563;
+    border-color: #6B7280;
+}
+
+.dark .custom-state-multi-checkbox label:has(input[type="checkbox"]:checked),
+.dark .custom-state-multi-checkbox label.active {
+    background-color: #4338CA;
+    border-color: #6366F1;
+}
+
+.dark .custom-state-multi-checkbox label:has(input[type="checkbox"]:checked) span,
+.dark .custom-state-multi-checkbox label.active span {
+    color: #E0E7FF;
+    font-weight: 500;
+}
+
+/* Стили для загрузки - темная тема */
+.dark .loading {
+    border-color: #4B5563;
+    border-top-color: #6366F1;
+}
+
+/* Плавный переход при переключении темы */
+* {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+}
+
+/* Исключения для элементов, которые не должны анимироваться */
+svg,
+img,
+canvas,
+video {
+    transition: none;
+}
+
+/* Стили для графиков Chart.js - темная тема */
+.dark .chart-container {
+    color: #E5E7EB;
+}
+
+/* Стили для печати - темная тема */
+@media print {
+    .dark body {
+        background: white !important;
+        color: black !important;
     }
 }

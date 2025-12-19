@@ -224,6 +224,18 @@ class Database:
         """
         return self.execute_query(query, (user_id, start_date, end_date))
     
+    def get_last_entry_date(self, user_id):
+        """Получение даты последней записи пользователя"""
+        query = """
+            SELECT MAX(entry_date) as last_date
+            FROM entries 
+            WHERE user_id = %s
+        """
+        result = self.execute_query(query, (user_id,))
+        if result and result[0] and result[0]['last_date']:
+            return result[0]['last_date']
+        return None
+    
     # Методы для работы с лекарствами
     def create_medication(self, user_id, name, dosage_mg=None, time_of_day=None, frequency='daily'):
         """Создание нового лекарства"""

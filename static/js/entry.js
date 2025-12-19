@@ -33,11 +33,51 @@ function initializeEntryPage() {
     // Инициализируем справочники
     medications = Array.isArray(window.medications) ? window.medications : [];
     customStates = Array.isArray(window.customStates) ? window.customStates : [];
-    customStates = customStates.map(state => 
-        state.mark_type === 'multi_checkbox' 
-            ? {...state, options: (state.options || '').split('||').map(o => o.trim()).filter(Boolean)}
-            : state
-    );
+    
+    // Нормализуем лекарства: удаляем дубликаты по ID
+    const medSeenIds = new Set();
+    medications = medications
+        .map(med => {
+            // Нормализуем ID к числу для консистентности
+            const normalizedId = typeof med.id === 'number' ? med.id : parseInt(med.id);
+            return {...med, id: normalizedId};
+        })
+        .filter(med => {
+            // Удаляем дубликаты по ID
+            if (medSeenIds.has(med.id)) {
+                return false;
+            }
+            medSeenIds.add(med.id);
+            return true;
+        })
+        .sort((a, b) => a.id - b.id); // Сортируем по ID
+    
+    // Нормализуем состояния: обрабатываем опции и удаляем дубликаты по ID
+    const seenIds = new Set();
+    customStates = customStates
+        .map(state => {
+            // Нормализуем ID к числу для консистентности
+            const normalizedId = typeof state.id === 'number' ? state.id : parseInt(state.id);
+            
+            // Обрабатываем опции для multi_checkbox
+            if (state.mark_type === 'multi_checkbox') {
+                return {
+                    ...state,
+                    id: normalizedId,
+                    options: (state.options || '').split('||').map(o => o.trim()).filter(Boolean)
+                };
+            }
+            return {...state, id: normalizedId};
+        })
+        .filter(state => {
+            // Удаляем дубликаты по ID
+            if (seenIds.has(state.id)) {
+                return false;
+            }
+            seenIds.add(state.id);
+            return true;
+        })
+        .sort((a, b) => a.id - b.id); // Сортируем по ID
     
     // Инициализируем дату и навигацию
     initializeDateNavigation();
@@ -227,17 +267,47 @@ function initializeBinaryButtons() {
 function initializeSleepSlider() {
     const sleepSlider = document.getElementById('sleep_hours');
     const sleepDisplay = document.getElementById('sleep_hours_display');
+    const decreaseBtn = document.getElementById('sleep-hours-decrease');
+    const increaseBtn = document.getElementById('sleep-hours-increase');
     
     if (sleepSlider && sleepDisplay) {
-        // Обновление отображения при изменении
-        sleepSlider.addEventListener('input', function() {
-            const value = parseFloat(this.value);
+        // Функция для обновления отображения значения
+        const updateDisplay = () => {
+            const value = parseFloat(sleepSlider.value);
             sleepDisplay.textContent = value === 1 ? '1 час' : value < 5 ? `${value} часа` : `${value} часов`;
-        });
+        };
+        
+        // Обновление отображения при изменении ползунка
+        sleepSlider.addEventListener('input', updateDisplay);
+        
+        // Кнопка уменьшения
+        if (decreaseBtn) {
+            decreaseBtn.addEventListener('click', () => {
+                const currentValue = parseFloat(sleepSlider.value);
+                const step = parseFloat(sleepSlider.step) || 0.5;
+                const newValue = Math.max(parseFloat(sleepSlider.min), currentValue - step);
+                sleepSlider.value = newValue;
+                updateDisplay();
+                // Триггерим событие input для других обработчиков
+                sleepSlider.dispatchEvent(new Event('input'));
+            });
+        }
+        
+        // Кнопка увеличения
+        if (increaseBtn) {
+            increaseBtn.addEventListener('click', () => {
+                const currentValue = parseFloat(sleepSlider.value);
+                const step = parseFloat(sleepSlider.step) || 0.5;
+                const newValue = Math.min(parseFloat(sleepSlider.max), currentValue + step);
+                sleepSlider.value = newValue;
+                updateDisplay();
+                // Триггерим событие input для других обработчиков
+                sleepSlider.dispatchEvent(new Event('input'));
+            });
+        }
         
         // Инициализация начального значения
-        const initialValue = parseFloat(sleepSlider.value);
-        sleepDisplay.textContent = initialValue === 1 ? '1 час' : initialValue < 5 ? `${initialValue} часа` : `${initialValue} часов`;
+        updateDisplay();
     }
 }
 
@@ -328,10 +398,15 @@ function updateDayTypeUI(dt, explanation = null) {
 
     const colorClasses = [
         'bg-red-50','text-red-800','border-red-200',
+        'dark:bg-red-900','dark:text-red-200','dark:border-red-700',
         'bg-yellow-50','text-yellow-800','border-yellow-200',
+        'dark:bg-yellow-900','dark:text-yellow-200','dark:border-yellow-700',
         'bg-purple-50','text-purple-800','border-purple-200',
+        'dark:bg-purple-900','dark:text-purple-200','dark:border-purple-700',
         'bg-green-50','text-green-800','border-green-200',
-        'bg-gray-50','text-gray-700','border-gray-200'
+        'dark:bg-green-900','dark:text-green-200','dark:border-green-700',
+        'bg-gray-50','text-gray-700','border-gray-200',
+        'dark:bg-gray-700','dark:text-gray-200','dark:border-gray-600'
     ];
     display.classList.remove(...colorClasses);
     display.innerHTML = '';
@@ -352,22 +427,22 @@ function updateDayTypeUI(dt, explanation = null) {
         text = 'Тип дня: депрессивный эпизод.';
         // Используем изображение для депрессивной фазы, с fallback на эмодзи
         icon = '<img src="/static/images/depressive-phase.png" alt="Депрессивная фаза" class="w-8 h-8 object-contain" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" onerror="this.onerror=null; this.style.display=\'none\'; this.nextElementSibling.style.display=\'inline\';"><span style="display:none; font-size: 1.5rem;">😔</span>';
-        display.classList.add('bg-red-50','text-red-800','border-red-200');
+        display.classList.add('bg-red-50','dark:bg-red-900','text-red-800','dark:text-red-200','border-red-200','dark:border-red-700');
     } else if (dt === 'hypomanic') {
         text = 'Тип дня: гипоманиакальный эпизод.';
         // Используем изображение для гипомании, с fallback на эмодзи
         icon = '<img src="/static/images/hypomanic-phase.png" alt="Гипоманиакальный эпизод" class="w-16 h-16 object-contain" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" onerror="this.onerror=null; this.style.display=\'none\'; this.nextElementSibling.style.display=\'inline\';"><span style="display:none; font-size: 1.5rem;">😳</span>';
-        display.classList.add('bg-yellow-50','text-yellow-800','border-yellow-200');
+        display.classList.add('bg-yellow-50','dark:bg-yellow-900','text-yellow-800','dark:text-yellow-200','border-yellow-200','dark:border-yellow-700');
     } else if (dt === 'mixed') {
         text = 'Тип дня: смешанный эпизод (есть и депрессивные, и гипоманиакальные симптомы).';
         // Используем изображение для смешанного эпизода, с fallback на эмодзи
         icon = '<img src="/static/images/mixed-phase.png" alt="Смешанный эпизод" class="w-8 h-8 object-contain" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" onerror="this.onerror=null; this.style.display=\'none\'; this.nextElementSibling.style.display=\'inline\';"><span style="display:none; font-size: 1.5rem;">♻️</span>';
-        display.classList.add('bg-purple-50','text-purple-800','border-purple-200');
+        display.classList.add('bg-purple-50','dark:bg-purple-900','text-purple-800','dark:text-purple-200','border-purple-200','dark:border-purple-700');
     } else {
         // normal или что-то по умолчанию
         text = 'Тип дня: нормальный день (без выраженного эпизода).';
         icon = '🙂';
-        display.classList.add('bg-green-50','text-green-800','border-green-200');
+        display.classList.add('bg-green-50','dark:bg-green-900','text-green-800','dark:text-green-200','border-green-200','dark:border-green-700');
     }
 
     if (dt === 'depressive' || dt === 'mixed') {
@@ -477,6 +552,12 @@ async function loadEntryForDate(dateStr) {
         const initialDayTypeDisplay = document.getElementById('day-type-display');
         if (initialDayTypeSection) initialDayTypeSection.classList.add('hidden');
         if (initialDayTypeDisplay) initialDayTypeDisplay.textContent = '';
+        
+        // Очищаем заметки сразу при смене даты
+        const notesField = document.getElementById('notes');
+        if (notesField) {
+            notesField.value = '';
+        }
     } catch (e) {
         console.error('Ошибка предварительной очистки при смене даты:', e);
     }
@@ -603,8 +684,17 @@ async function loadEntryForDate(dateStr) {
             sleepDisplay.textContent = value === 1 ? '1 час' : value < 5 ? `${value} часа` : `${value} часов`;
         }
 
-        // Заметки
-        document.getElementById('notes').value = entry.notes || '';
+        // Заметки - обнуляем, если нет данных или пустая строка
+        const notesField = document.getElementById('notes');
+        if (notesField) {
+            // Проверяем, есть ли реальные заметки (не null, не undefined, не пустая строка)
+            const notesValue = entry.notes;
+            if (notesValue && typeof notesValue === 'string' && notesValue.trim().length > 0) {
+                notesField.value = notesValue;
+            } else {
+                notesField.value = '';
+            }
+        }
 
         // Обновляем блок типа дня по данным записи (если сервер уже рассчитал)
         updateDayTypeUI(entry.day_type);
@@ -613,7 +703,9 @@ async function loadEntryForDate(dateStr) {
         resetMedicationsSelection();
         if (data.medications) {
             Object.entries(data.medications).forEach(([medId, taken]) => {
-                const checkbox = document.querySelector(`input[name="medication_check_${medId}"]`);
+                // Нормализуем ID для поиска чекбокса
+                const normalizedId = typeof medId === 'number' ? medId : parseInt(medId);
+                const checkbox = document.querySelector(`input[name="medication_check_${normalizedId}"]`);
                 if (checkbox) checkbox.checked = !!taken;
             });
         }
@@ -646,14 +738,32 @@ function resetCustomStatesSelection() {
         
         switch (state.mark_type) {
             case 'binary':
-                setCustomStateBinary(state.id, 'no');
+                // Убираем активное состояние, но не устанавливаем значение по умолчанию
+                const binaryGroup = document.querySelectorAll(`[data-custom-binary="${state.id}"]`);
+                const binaryHiddenInput = document.getElementById(`custom_state_binary_input_${state.id}`);
+                binaryGroup.forEach(btn => {
+                    btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+                });
+                if (binaryHiddenInput) binaryHiddenInput.value = '';
                 break;
             case 'categorical':
-                setCustomStateCategorical(state.id, 'none');
+                // Убираем активное состояние, но не устанавливаем значение по умолчанию
+                const catGroup = document.querySelector(`[data-custom-cat="${state.id}"]`);
+                const catHiddenInput = document.getElementById(`custom_state_cat_input_${state.id}`);
+                if (catGroup) {
+                    catGroup.querySelectorAll('.custom-cat-btn').forEach(btn => {
+                        btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+                    });
+                }
+                if (catHiddenInput) catHiddenInput.value = '';
                 break;
             case 'numeric':
                 const numInput = document.getElementById(`custom_state_num_${state.id}`);
-                if (numInput) numInput.value = '5';
+                if (numInput) {
+                    numInput.value = '5';
+                    const valueDisplay = document.getElementById(`custom_state_num_value_${state.id}`);
+                    if (valueDisplay) valueDisplay.textContent = '5';
+                }
                 break;
             case 'multi_checkbox':
                 container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
@@ -669,12 +779,27 @@ function updateMedicationsList() {
     const container = document.getElementById('medications-list');
     if (!container) return;
 
+    // Костыль: полностью очищаем контейнер перед обновлением
+    // Это гарантированно удалит все старые элементы, включая дубликаты
+    container.innerHTML = '';
+
     if (medications.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-sm">Нет добавленных лекарств</p>';
+        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Нет добавленных лекарств</p>';
         return;
     }
 
-    container.innerHTML = medications.map(med => {
+    // Удаляем дубликаты из массива перед отображением (на всякий случай)
+    const seenIds = new Set();
+    const uniqueMedications = medications.filter(med => {
+        const medId = typeof med.id === 'number' ? med.id : parseInt(med.id);
+        if (seenIds.has(medId)) {
+            return false; // Дубликат - пропускаем
+        }
+        seenIds.add(medId);
+        return true;
+    });
+
+    container.innerHTML = uniqueMedications.map(med => {
         const dosageText = med.dosage_mg ? `${med.dosage_mg} мг` : '';
         const timeText = med.time_of_day ? TIME_OF_DAY_LABELS[med.time_of_day] : '';
         const frequencyText = med.frequency ? FREQUENCY_LABELS[med.frequency] : '';
@@ -683,23 +808,25 @@ function updateMedicationsList() {
         const infoText = infoParts.length > 0 ? ` (${infoParts.join(', ')})` : '';
         
         return `
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-md mb-2">
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md mb-2 transition-colors">
                 <div class="flex items-center space-x-3 flex-1">
-                    <input type="checkbox" id="medication_check_${med.id}" name="medication_check_${med.id}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                    <label for="medication_check_${med.id}" class="text-sm font-medium text-gray-700 flex-1">
+                    <input type="checkbox" id="medication_check_${med.id}" name="medication_check_${med.id}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                    <label for="medication_check_${med.id}" class="text-sm font-medium text-gray-700 dark:text-gray-200 flex-1">
                         ${med.name}${infoText}
                     </label>
                 </div>
-                <div class="flex items-center gap-1 ml-2">
-                    <button type="button" onclick="editMedication(${med.id})" class="text-indigo-600 hover:text-indigo-500 text-sm" title="Редактировать">
+                <div class="flex items-center gap-2 ml-2">
+                    <button type="button" onclick="editMedication(${med.id})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm flex items-center gap-1.5" title="Редактировать">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
+                        <span>Изменить</span>
                     </button>
-                    <button type="button" onclick="deleteMedication(${med.id})" class="text-red-500 hover:text-red-600 text-sm" title="Удалить">
+                    <button type="button" onclick="deleteMedication(${med.id})" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-sm flex items-center gap-1.5" title="Удалить">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
                         </svg>
+                        <span>Удалить</span>
                     </button>
                 </div>
             </div>
@@ -715,33 +842,48 @@ function updateCustomStatesList() {
     const container = document.getElementById('custom-states-list');
     if (!container) return;
 
+    // Костыль: полностью очищаем контейнер перед обновлением
+    // Это гарантированно удалит все старые элементы, включая дубликаты
+    container.innerHTML = '';
+
     if (customStates.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-sm">Нет добавленных состояний</p>';
+        container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">Нет добавленных состояний</p>';
         return;
     }
 
-    container.innerHTML = customStates.map(state => {
+    // Удаляем дубликаты из массива перед отображением (на всякий случай)
+    const seenIds = new Set();
+    const uniqueStates = customStates.filter(state => {
+        const stateId = typeof state.id === 'number' ? state.id : parseInt(state.id);
+        if (seenIds.has(stateId)) {
+            return false; // Дубликат - пропускаем
+        }
+        seenIds.add(stateId);
+        return true;
+    });
+
+    container.innerHTML = uniqueStates.map(state => {
         let inputHtml = '';
         
         switch (state.mark_type) {
             case 'binary':
                 inputHtml = `
                     <div class="flex gap-2" id="custom_state_binary_${state.id}">
-                        <button type="button" data-custom-binary="${state.id}" data-value="no" class="custom-binary-btn px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors active">Нет</button>
-                        <button type="button" data-custom-binary="${state.id}" data-value="yes" class="custom-binary-btn px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Да</button>
+                        <button type="button" data-custom-binary="${state.id}" data-value="no" class="custom-binary-btn px-5 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
+                        <button type="button" data-custom-binary="${state.id}" data-value="yes" class="custom-binary-btn px-5 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Да</button>
                     </div>
-                    <input type="hidden" id="custom_state_binary_input_${state.id}" name="custom_state_${state.id}" value="no">
+                    <input type="hidden" id="custom_state_binary_input_${state.id}" name="custom_state_${state.id}" value="">
                 `;
                 break;
             case 'categorical':
                 inputHtml = `
                     <div class="grid grid-cols-4 gap-2" id="custom_state_cat_${state.id}" data-custom-cat="${state.id}">
-                        <button type="button" data-value="none" class="custom-cat-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors active">Нет</button>
-                        <button type="button" data-value="mild" class="custom-cat-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Лёгкое</button>
-                        <button type="button" data-value="moderate" class="custom-cat-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Умеренное</button>
-                        <button type="button" data-value="severe" class="custom-cat-btn px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">Тяжёлое</button>
+                        <button type="button" data-value="none" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
+                        <button type="button" data-value="mild" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Лёгкое</button>
+                        <button type="button" data-value="moderate" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Умеренное</button>
+                        <button type="button" data-value="severe" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Тяжёлое</button>
                     </div>
-                    <input type="hidden" id="custom_state_cat_input_${state.id}" name="custom_state_${state.id}" value="none">
+                    <input type="hidden" id="custom_state_cat_input_${state.id}" name="custom_state_${state.id}" value="">
                 `;
                 break;
             case 'numeric':
@@ -750,7 +892,7 @@ function updateCustomStatesList() {
                         <input type="range" id="custom_state_num_${state.id}" name="custom_state_${state.id}" 
                                min="0" max="10" value="5" 
                                class="flex-1">
-                        <span id="custom_state_num_value_${state.id}" class="text-sm font-medium text-gray-700 w-8">5</span>
+                        <span id="custom_state_num_value_${state.id}" class="text-sm font-medium text-gray-700 dark:text-gray-300 w-8">5</span>
                     </div>
                 `;
                 break;
@@ -758,17 +900,17 @@ function updateCustomStatesList() {
                 const options = Array.isArray(state.options) ? state.options : [];
                 if (options.length === 0) {
                     inputHtml = `
-                        <p class="text-xs text-gray-500">Для этого состояния ещё не заданы варианты чекбоксов.</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Для этого состояния ещё не заданы варианты чекбоксов.</p>
                     `;
                 } else {
                     const optionsHtml = options.map(optionLabel => `
-                        <label class="flex items-center text-sm text-gray-700">
+                        <label class="flex items-center text-base text-gray-700 dark:text-gray-300">
                             <input type="checkbox" name="custom_state_${state.id}" value="${optionLabel}">
                             <span>${optionLabel}</span>
                         </label>
                     `).join('');
                     inputHtml = `
-                        <div class="flex flex-wrap gap-2 custom-state-multi-checkbox" id="custom_state_multi_${state.id}">
+                        <div class="flex flex-wrap gap-3 custom-state-multi-checkbox" id="custom_state_multi_${state.id}">
                             ${optionsHtml}
                         </div>
                     `;
@@ -778,30 +920,38 @@ function updateCustomStatesList() {
         
         return `
             <div class="mb-4" id="custom_state_${state.id}">
-                <p class="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                    <span>${state.name}</span>
-                    <button 
-                        type="button" 
-                        onclick="editCustomState(${state.id})" 
-                        class="text-xs text-indigo-600 hover:text-indigo-500 flex items-center gap-1"
-                        title="Редактировать"
-                    >
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                    </button>
-                    <button 
-                        type="button" 
-                        onclick="deleteCustomState(${state.id})" 
-                        class="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
-                        title="Удалить"
-                    >
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
-                        </svg>
-                    </button>
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ${state.name}
                 </p>
-                ${inputHtml}
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        ${inputHtml}
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button 
+                            type="button" 
+                            onclick="editCustomState(${state.id})" 
+                            class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 flex items-center gap-1.5 px-2 py-1"
+                            title="Редактировать"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            <span>Изменить</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            onclick="deleteCustomState(${state.id})" 
+                            class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 flex items-center gap-1.5 px-2 py-1"
+                            title="Удалить"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
+                            </svg>
+                            <span>Удалить</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
@@ -810,16 +960,27 @@ function updateCustomStatesList() {
     initializeCustomStateHandlers();
 }
 
+// Глобальные обработчики для пользовательских состояний (добавляются один раз)
+let customStateHandlersInitialized = false;
+
 /**
  * Инициализация обработчиков для пользовательских состояний
  */
 function initializeCustomStateHandlers() {
-    // Бинарные кнопки
-    document.querySelectorAll('[data-custom-binary]').forEach(btn => {
-        btn.addEventListener('click', () => {
+    // Используем делегирование событий на контейнере, чтобы избежать дублирования обработчиков
+    const container = document.getElementById('custom-states-list');
+    if (!container) return;
+    
+    // Добавляем обработчики только один раз
+    if (customStateHandlersInitialized) return;
+    customStateHandlersInitialized = true;
+    
+    // Бинарные и категориальные кнопки - используем делегирование событий
+    container.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-custom-binary]');
+        if (btn) {
             const stateId = btn.getAttribute('data-custom-binary');
             const value = btn.getAttribute('data-value');
-
             const isAlreadyActive = btn.classList.contains('active');
 
             // Toggle off
@@ -829,19 +990,17 @@ function initializeCustomStateHandlers() {
             }
 
             setCustomStateBinary(stateId, value);
-        });
-    });
-    
-    // Категориальные кнопки
-    document.querySelectorAll('[data-custom-cat]').forEach(group => {
-        const stateId = group.getAttribute('data-custom-cat');
-        const buttons = group.querySelectorAll('.custom-cat-btn');
+            return;
+        }
         
-        buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const value = btn.getAttribute('data-value');
-
-                const isAlreadyActive = btn.classList.contains('active');
+        // Категориальные кнопки
+        const catBtn = e.target.closest('.custom-cat-btn');
+        if (catBtn) {
+            const group = catBtn.closest('[data-custom-cat]');
+            if (group) {
+                const stateId = group.getAttribute('data-custom-cat');
+                const value = catBtn.getAttribute('data-value');
+                const isAlreadyActive = catBtn.classList.contains('active');
 
                 // Toggle off
                 if (isAlreadyActive) {
@@ -850,34 +1009,36 @@ function initializeCustomStateHandlers() {
                 }
 
                 setCustomStateCategorical(stateId, value);
-            });
-        });
-    });
-    
-    // Числовые ползунки
-    document.querySelectorAll('[id^="custom_state_num_"]').forEach(slider => {
-        const stateId = slider.id.replace('custom_state_num_', '');
-        const valueDisplay = document.getElementById(`custom_state_num_value_${stateId}`);
-        
-        slider.addEventListener('input', function() {
-            if (valueDisplay) {
-                valueDisplay.textContent = this.value;
+                return;
             }
-        });
+        }
     });
     
-    // Множественные чекбоксы
-    document.querySelectorAll('.custom-state-multi-checkbox input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const label = this.closest('label');
+    // Числовые ползунки - используем делегирование событий
+    container.addEventListener('input', (e) => {
+        const slider = e.target;
+        if (slider.id && slider.id.startsWith('custom_state_num_')) {
+            const stateId = slider.id.replace('custom_state_num_', '');
+            const valueDisplay = document.getElementById(`custom_state_num_value_${stateId}`);
+            if (valueDisplay) {
+                valueDisplay.textContent = slider.value;
+            }
+        }
+    });
+    
+    // Множественные чекбоксы - используем делегирование событий
+    container.addEventListener('change', (e) => {
+        const checkbox = e.target;
+        if (checkbox.type === 'checkbox' && checkbox.closest('.custom-state-multi-checkbox')) {
+            const label = checkbox.closest('label');
             if (label) {
-                if (this.checked) {
+                if (checkbox.checked) {
                     label.classList.add('active');
                 } else {
                     label.classList.remove('active');
                 }
             }
-        });
+        }
     });
 }
 
@@ -885,12 +1046,23 @@ function setCustomStateBinary(stateId, value) {
     const group = document.querySelectorAll(`[data-custom-binary="${stateId}"]`);
     const hiddenInput = document.getElementById(`custom_state_binary_input_${stateId}`);
     
+    // Если value пустой, убираем все активные состояния
+    if (!value || value === '') {
+        group.forEach(btn => {
+            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+        });
+        if (hiddenInput) {
+            hiddenInput.value = '';
+        }
+        return;
+    }
+    
     group.forEach(btn => {
         const btnValue = btn.getAttribute('data-value');
         if (btnValue === value) {
-            btn.classList.add('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.add('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
         } else {
-            btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
         }
     });
     
@@ -906,12 +1078,23 @@ function setCustomStateCategorical(stateId, value) {
     const buttons = group.querySelectorAll('.custom-cat-btn');
     const hiddenInput = document.getElementById(`custom_state_cat_input_${stateId}`);
     
+    // Если value пустой, убираем все активные состояния
+    if (!value || value === '') {
+        buttons.forEach(btn => {
+            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+        });
+        if (hiddenInput) {
+            hiddenInput.value = '';
+        }
+        return;
+    }
+    
     buttons.forEach(btn => {
         const btnValue = btn.getAttribute('data-value');
         if (btnValue === value) {
-            btn.classList.add('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.add('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
         } else {
-            btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
         }
     });
     
@@ -1071,7 +1254,12 @@ function addMedication() {
 }
 
 function editMedication(medId) {
-    const med = medications.find(m => m.id === medId);
+    // Унифицируем сравнение ID
+    const med = medications.find(m => {
+        const mId = typeof m.id === 'number' ? m.id : parseInt(m.id);
+        const searchId = typeof medId === 'number' ? medId : parseInt(medId);
+        return mId === searchId;
+    });
     if (!med) return;
     
     editingMedicationId = medId;
@@ -1122,13 +1310,36 @@ async function saveMedication() {
             closeAddMedicationModal();
             
             if (editingMedicationId) {
-                const index = medications.findIndex(m => m.id === editingMedicationId);
-                if (index !== -1) {
-                    medications[index] = result.medication;
-                }
+                // Костыль: удаляем все элементы с таким ID и добавляем обновленное
+                // Полная очистка DOM в updateMedicationsList() гарантирует отсутствие дубликатов
+                const editingId = typeof editingMedicationId === 'number' ? editingMedicationId : parseInt(editingMedicationId);
+                
+                // Удаляем все элементы с таким ID
+                medications = medications.filter(m => {
+                    const mId = typeof m.id === 'number' ? m.id : parseInt(m.id);
+                    return mId !== editingId;
+                });
+                
+                // Добавляем обновленное лекарство
+                medications.push(result.medication);
             } else {
+                // При добавлении нового тоже проверяем на дубликаты
+                const newId = typeof result.medication.id === 'number' ? result.medication.id : parseInt(result.medication.id);
+                medications = medications.filter(m => {
+                    const mId = typeof m.id === 'number' ? m.id : parseInt(m.id);
+                    return mId !== newId;
+                });
                 medications.push(result.medication);
             }
+            
+            // Сортируем по ID для консистентности
+            medications.sort((a, b) => {
+                const aId = typeof a.id === 'number' ? a.id : parseInt(a.id);
+                const bId = typeof b.id === 'number' ? b.id : parseInt(b.id);
+                return aId - bId;
+            });
+            
+            // Полностью пересоздаем список (костыль удаляет все старые элементы)
             updateMedicationsList();
         } else {
             StabilUtils.showMessage(result.message || 'Ошибка при сохранении лекарства', 'error');
@@ -1140,7 +1351,12 @@ async function saveMedication() {
 }
 
 async function deleteMedication(medId) {
-    const med = medications.find(m => m.id === medId);
+    // Унифицируем сравнение ID
+    const med = medications.find(m => {
+        const mId = typeof m.id === 'number' ? m.id : parseInt(m.id);
+        const searchId = typeof medId === 'number' ? medId : parseInt(medId);
+        return mId === searchId;
+    });
     if (!med) return;
 
     const confirmed = window.confirm(`Удалить лекарство "${med.name}" и все отметки его приёма?`);
@@ -1157,7 +1373,12 @@ async function deleteMedication(medId) {
 
         const result = await response.json();
         if (result.success) {
-            medications = medications.filter(m => m.id !== medId);
+            // Унифицируем сравнение ID при удалении
+            const deleteId = typeof medId === 'number' ? medId : parseInt(medId);
+            medications = medications.filter(m => {
+                const mId = typeof m.id === 'number' ? m.id : parseInt(m.id);
+                return mId !== deleteId;
+            });
             updateMedicationsList();
             StabilUtils.showMessage('Лекарство удалено', 'success');
         } else {
@@ -1185,7 +1406,12 @@ function addCustomState() {
 }
 
 function editCustomState(stateId) {
-    const state = customStates.find(s => s.id === stateId);
+    // Унифицируем сравнение ID (могут быть строки или числа)
+    const state = customStates.find(s => {
+        const sId = typeof s.id === 'number' ? s.id : parseInt(s.id);
+        const searchId = typeof stateId === 'number' ? stateId : parseInt(stateId);
+        return sId === searchId;
+    });
     if (!state) return;
     
     editingStateId = stateId;
@@ -1272,18 +1498,50 @@ async function saveCustomState() {
             closeAddCustomStateModal();
             
             const updatedState = result.state;
+            // Обрабатываем опции для multi_checkbox
             if (updatedState && updatedState.mark_type === 'multi_checkbox') {
-                updatedState.options = Array.isArray(updatedState.options) ? updatedState.options : options;
+                if (Array.isArray(updatedState.options)) {
+                    updatedState.options = updatedState.options;
+                } else if (updatedState.options === null || updatedState.options === undefined) {
+                    updatedState.options = options.length > 0 ? options : [];
+                } else if (typeof updatedState.options === 'string') {
+                    updatedState.options = updatedState.options.split('||').map(o => o.trim()).filter(Boolean);
+                } else {
+                    updatedState.options = [];
+                }
             }
             
             if (editingStateId) {
-                const index = customStates.findIndex(s => s.id === editingStateId);
-                if (index !== -1) {
-                    customStates[index] = updatedState;
-                }
+                // Костыль: просто удаляем старое состояние и добавляем новое
+                // Полная очистка DOM в updateCustomStatesList() гарантирует отсутствие дубликатов
+                const editingId = typeof editingStateId === 'number' ? editingStateId : parseInt(editingStateId);
+                
+                // Удаляем все элементы с таким ID
+                customStates = customStates.filter(s => {
+                    const sId = typeof s.id === 'number' ? s.id : parseInt(s.id);
+                    return sId !== editingId;
+                });
+                
+                // Добавляем обновленное состояние
+                customStates.push(updatedState);
             } else {
+                // При добавлении нового тоже проверяем на дубликаты
+                const newId = typeof updatedState.id === 'number' ? updatedState.id : parseInt(updatedState.id);
+                customStates = customStates.filter(s => {
+                    const sId = typeof s.id === 'number' ? s.id : parseInt(s.id);
+                    return sId !== newId;
+                });
                 customStates.push(updatedState);
             }
+            
+            // Сортируем по ID для консистентности
+            customStates.sort((a, b) => {
+                const aId = typeof a.id === 'number' ? a.id : parseInt(a.id);
+                const bId = typeof b.id === 'number' ? b.id : parseInt(b.id);
+                return aId - bId;
+            });
+            
+            // Полностью пересоздаем список (костыль удаляет все старые элементы)
             updateCustomStatesList();
         } else {
             StabilUtils.showMessage(result.message || 'Ошибка при сохранении состояния', 'error');
@@ -1295,7 +1553,12 @@ async function saveCustomState() {
 }
 
 async function deleteCustomState(stateId) {
-    const state = customStates.find(s => s.id === stateId);
+    // Унифицируем сравнение ID
+    const state = customStates.find(s => {
+        const sId = typeof s.id === 'number' ? s.id : parseInt(s.id);
+        const searchId = typeof stateId === 'number' ? stateId : parseInt(stateId);
+        return sId === searchId;
+    });
     if (!state) return;
 
     const confirmed = window.confirm(`Удалить состояние "${state.name}" и все его отметки в записях?`);
@@ -1312,7 +1575,12 @@ async function deleteCustomState(stateId) {
 
         const result = await response.json();
         if (result.success) {
-            customStates = customStates.filter(s => s.id !== stateId);
+            // Унифицируем сравнение ID при удалении
+            const deleteId = typeof stateId === 'number' ? stateId : parseInt(stateId);
+            customStates = customStates.filter(s => {
+                const sId = typeof s.id === 'number' ? s.id : parseInt(s.id);
+                return sId !== deleteId;
+            });
             updateCustomStatesList();
             StabilUtils.showMessage('Состояние удалено', 'success');
         } else {

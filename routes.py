@@ -378,6 +378,12 @@ def entry():
         custom_states=custom_states,
     )
 
+@bp.route('/psychoeducation')
+@login_required
+def psychoeducation():
+    """Страница психообразования"""
+    return render_template('psychoeducation.html')
+
 @bp.route('/save_entry', methods=['POST'])
 @login_required
 def save_entry():
@@ -717,7 +723,9 @@ def delete_custom_state():
 @login_required
 def report_settings():
     """Страница настройки отчёта"""
-    return render_template('report_settings.html')
+    db = get_db()
+    last_entry_date = db.get_last_entry_date(current_user.id)
+    return render_template('report_settings.html', last_entry_date=last_entry_date)
 
 @bp.route('/generate_report')
 @login_required
@@ -738,10 +746,13 @@ def generate_report():
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
         
-        # Проверка дат
-        today = date.today()
-        if start_date > today or end_date > today:
-            return jsonify({'success': False, 'message': 'Нельзя выбирать будущие даты'}), 400
+        # Проверка дат - используем дату последней записи вместо сегодняшней даты
+        last_entry_date = db.get_last_entry_date(current_user.id)
+        if not last_entry_date:
+            return jsonify({'success': False, 'message': 'Нет записей для генерации отчёта'}), 400
+        
+        if start_date > last_entry_date or end_date > last_entry_date:
+            return jsonify({'success': False, 'message': f'Нельзя выбирать даты позже последней записи ({last_entry_date.strftime("%d.%m.%Y")})'}), 400
         
         if start_date > end_date:
             return jsonify({'success': False, 'message': 'Начальная дата должна быть раньше конечной'}), 400
