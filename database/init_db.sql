@@ -22,23 +22,24 @@ CREATE TABLE IF NOT EXISTS entries (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     entry_date DATE NOT NULL,
-    mood INT DEFAULT 5 CHECK (mood BETWEEN 0 AND 10) COMMENT 'DEPRECATED: числовая шкала настроения 0-10, используйте depressive_state/manic_state',
-    irritability INT DEFAULT 0 CHECK (irritability BETWEEN 0 AND 10) COMMENT 'DEPRECATED: числовая шкала раздражительности 0-10, используйте irritable_state',
-    anxiety INT DEFAULT 0 CHECK (anxiety BETWEEN 0 AND 10) COMMENT 'DEPRECATED: числовая шкала тревоги 0-10, используйте anxious_state',
-    energy INT DEFAULT 5 CHECK (energy BETWEEN 0 AND 10) COMMENT 'DEPRECATED: числовая шкала энергии 0-10, используйте manic_state',
+    mood INT DEFAULT 5 COMMENT 'DEPRECATED: числовая шкала настроения 0-10, используйте depressive_state/manic_state',
+    irritability INT DEFAULT 0 COMMENT 'DEPRECATED: числовая шкала раздражительности 0-10, используйте irritable_state',
+    anxiety INT DEFAULT 0 COMMENT 'DEPRECATED: числовая шкала тревоги 0-10, используйте anxious_state',
+    energy INT DEFAULT 5 COMMENT 'DEPRECATED: числовая шкала энергии 0-10, используйте manic_state',
     depressive_state ENUM('none', 'mild', 'moderate', 'severe') DEFAULT 'none',
     manic_state ENUM('none', 'mild', 'moderate', 'severe') DEFAULT 'none',
     irritable_state ENUM('none', 'mild', 'moderate', 'severe') DEFAULT 'none',
     anxious_state ENUM('none', 'mild', 'moderate', 'severe') DEFAULT 'none',
     psychotic_symptoms TINYINT(1) DEFAULT 0,
     psychotherapy TINYINT(1) DEFAULT 0,
-    sleep_hours DECIMAL(4,2) DEFAULT 0.00 CHECK (sleep_hours BETWEEN 0 AND 16),
+    sleep_hours DECIMAL(4,2) DEFAULT 0.00,
     sleep_quality ENUM('poor', 'average', 'good') DEFAULT 'average',
     day_type ENUM('depressive', 'normal', 'hypomanic', 'mixed') DEFAULT 'normal',
     notes TEXT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_entry (user_id, entry_date)
+    UNIQUE KEY unique_entry (user_id, entry_date),
+    CHECK (sleep_hours BETWEEN 0 AND 16)
 ) COMMENT = 'Ежедневные записи состояния пользователя';
 
 -- Таблица лекарств (динамический список для пользователя)

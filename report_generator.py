@@ -44,11 +44,13 @@ class ReportGenerator:
         self.username = username
         self._register_cyrillic_font()
     
-    def _register_cyrillic_font(self):
+    def _register_cyrillic_font(self):  # <-- ДОЛЖЕН БЫТЬ С ОТСТУПОМ (4 пробела)
         """Регистрация шрифта с поддержкой кириллицы"""
         import platform
         
         font_paths = []
+        
+        # Windows шрифты
         if platform.system() == 'Windows':
             windows_fonts = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts')
             font_paths = [
@@ -56,6 +58,30 @@ class ReportGenerator:
                 os.path.join(windows_fonts, 'ARIAL.TTF'),
                 os.path.join(windows_fonts, 'calibri.ttf'),
             ]
+        # Linux шрифты
+        else:
+            # Стандартные пути к шрифтам в Linux
+            linux_font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+                '/usr/share/fonts/TTF/LiberationSans-Regular.ttf',
+                '/usr/local/share/fonts/DejaVuSans.ttf',
+            ]
+            
+            # Также попробуем найти через find
+            import subprocess
+            try:
+                result = subprocess.run(['find', '/usr/share/fonts', '-name', 'DejaVuSans.ttf', '-type', 'f'], 
+                                      capture_output=True, text=True, timeout=5)
+                if result.returncode == 0 and result.stdout.strip():
+                    linux_font_paths.insert(0, result.stdout.strip().split('\n')[0])
+            except:
+                pass
+            
+            font_paths = linux_font_paths
         
         for font_path in font_paths:
             if os.path.exists(font_path):
@@ -63,10 +89,13 @@ class ReportGenerator:
                     pdfmetrics.registerFont(TTFont('CyrillicFont', font_path))
                     self.font_name = 'CyrillicFont'
                     return
-                except:
+                except Exception as e:
+                    print(f"Ошибка регистрации шрифта {font_path}: {e}")
                     continue
         
+        # Если ничего не найдено, используем Helvetica (без кириллицы)
         self.font_name = 'Helvetica'
+        print("Предупреждение: шрифт с поддержкой кириллицы не найден, используется Helvetica")
     
     def _get_font_name(self):
         """Получение имени шрифта с поддержкой кириллицы"""
