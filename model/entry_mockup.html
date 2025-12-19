@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дневная запись - Affecta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <div class="space-y-6">
+            <!-- Заголовок и навигация по датам -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="mb-4">
+                    <h1 class="text-3xl font-bold text-gray-800">Дневная запись</h1>
+                    <p class="text-gray-600 mt-2">
+                        Выберите дату, чтобы просмотреть или изменить запись за этот день.
+                    </p>
+                </div>
+                <!-- Навигация по датам -->
+                <div class="flex items-center justify-between gap-4">
+                    <button class="p-2 rounded-md text-gray-600 hover:bg-gray-100">
+                        ←
+                    </button>
+                    <div class="flex items-center gap-3 flex-1 justify-center">
+                        <span class="text-lg font-medium text-gray-800">15 января 2025</span>
+                        <button class="p-2 rounded-md text-gray-600 hover:bg-gray-100">
+                            📅
+                        </button>
+                    </div>
+                    <button class="p-2 rounded-md text-gray-600 opacity-30 cursor-not-allowed">
+                        →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Форма записи -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <form class="space-y-6">
+                    <!-- Состояния сегодня -->
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-800 mb-4">Состояния сегодня</h2>
+                        <div class="space-y-4">
+                            <!-- Депрессивное состояние -->
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 mb-2">Депрессивное состояние</p>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Нет</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Лёгкое</button>
+                                    <button type="button" class="px-3 py-2 text-sm border-2 border-indigo-500 bg-indigo-50 text-indigo-700 rounded-md">Умеренное</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Тяжёлое</button>
+                                </div>
+                            </div>
+
+                            <!-- Маниакальное состояние -->
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 mb-2">Маниакальное состояние / гипомания</p>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <button type="button" class="px-3 py-2 text-sm border-2 border-indigo-500 bg-indigo-50 text-indigo-700 rounded-md">Нет</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Лёгкое</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Умеренное</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Тяжёлое</button>
+                                </div>
+                            </div>
+
+                            <!-- Раздражительность -->
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 mb-2">Раздражительность</p>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Нет</button>
+                                    <button type="button" class="px-3 py-2 text-sm border-2 border-indigo-500 bg-indigo-50 text-indigo-700 rounded-md">Лёгкая</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Умеренная</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Сильная</button>
+                                </div>
+                            </div>
+
+                            <!-- Тревога -->
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 mb-2">Тревога</p>
+                                <div class="grid grid-cols-4 gap-2">
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Нет</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Лёгкая</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Умеренная</button>
+                                    <button type="button" class="px-3 py-2 text-sm border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Сильная</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Сон -->
+                    <div class="border-t pt-6">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Сон</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Часы сна</label>
+                                <div class="space-y-2">
+                                    <input type="range" min="0" max="24" step="0.5" value="8" class="w-full">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-xs text-gray-500">0 ч</span>
+                                        <span class="text-sm font-medium text-gray-700">8 часов</span>
+                                        <span class="text-xs text-gray-500">24 ч</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Качество сна</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                                    <option value="poor">Плохое</option>
+                                    <option value="average" selected>Среднее</option>
+                                    <option value="good">Хорошее</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Лекарства -->
+                    <div class="border-t pt-6">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Прием лекарств</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <span class="font-medium text-gray-800">Ламотриджин</span>
+                                    <p class="text-sm text-gray-600">100 мг, Утро, Ежедневно</p>
+                                </div>
+                                <input type="checkbox" checked class="w-5 h-5 text-indigo-600">
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div>
+                                    <span class="font-medium text-gray-800">Кветиапин</span>
+                                    <p class="text-sm text-gray-600">25 мг, Вечер, Ежедневно</p>
+                                </div>
+                                <input type="checkbox" class="w-5 h-5 text-indigo-600">
+                            </div>
+                        </div>
+                        <button type="button" class="mt-3 text-indigo-600 hover:text-indigo-500 text-sm font-medium">
+                            + Добавить лекарство
+                        </button>
+                    </div>
+
+                    <!-- Заметки -->
+                    <div class="border-t pt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Заметки</label>
+                        <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ваши заметки о дне..."></textarea>
+                    </div>
+
+                    <!-- Кнопка сохранения -->
+                    <div class="flex justify-end space-x-3 pt-6">
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium">
+                            Сохранить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

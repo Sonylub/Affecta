@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройка отчёта - Affecta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-sm p-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Настройка отчёта</h1>
+            
+            <form class="space-y-8">
+                <!-- Выбор периода -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Период отчёта</h2>
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap gap-3">
+                            <label class="flex items-center text-gray-700">
+                                <input type="radio" name="period_type" value="preset" checked class="mr-2">
+                                <span>Предустановленный период</span>
+                            </label>
+                            <label class="flex items-center text-gray-700">
+                                <input type="radio" name="period_type" value="custom" class="mr-2">
+                                <span>Произвольный диапазон</span>
+                            </label>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-3">
+                            <button type="button" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium">7 дней</button>
+                            <button type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300">Месяц</button>
+                            <button type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300">6 месяцев</button>
+                            <button type="button" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300">Год</button>
+                        </div>
+                        
+                        <div class="text-sm text-gray-600">
+                            Выбранный период: 09.01.2025 - 15.01.2025
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Выбор разделов -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Разделы отчёта</h2>
+                    <p class="text-sm text-gray-600 mb-4">Выберите разделы, которые нужно включить в отчёт:</p>
+                    
+                    <div class="space-y-3">
+                        <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <input type="checkbox" checked class="mr-3 w-4 h-4 text-indigo-600">
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">История фаз (график)</span>
+                                <p class="text-sm text-gray-600">Визуализация изменения фаз за выбранный период</p>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <input type="checkbox" checked class="mr-3 w-4 h-4 text-indigo-600">
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">Агрегированная статистика сна</span>
+                                <p class="text-sm text-gray-600">Среднее, минимум, максимум часов сна, качество сна, график</p>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <input type="checkbox" checked class="mr-3 w-4 h-4 text-indigo-600">
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">График состояний</span>
+                                <p class="text-sm text-gray-600">Настроение, энергия, раздражительность, тревога</p>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
+                            <input type="checkbox" checked class="mr-3 w-4 h-4 text-indigo-600">
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">Заметки</span>
+                                <p class="text-sm text-gray-600">Все заметки за выбранный период с датами</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Комментарий -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Комментарий к отчёту</h2>
+                    <p class="text-sm text-gray-600 mb-2">Добавьте комментарий, который будет включен в отчёт (необязательно)</p>
+                    <textarea rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Введите комментарий..."></textarea>
+                </div>
+                
+                <!-- Кнопки -->
+                <div class="flex justify-end space-x-3 pt-6 border-t">
+                    <button type="button" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md font-medium hover:bg-gray-50">
+                        Отмена
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-medium">
+                        Сгенерировать отчёт
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+
