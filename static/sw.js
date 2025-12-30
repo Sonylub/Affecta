@@ -4,7 +4,7 @@
  */
 
 // Версия кэша - ОБЯЗАТЕЛЬНО обновлять при изменениях в JS/CSS файлах!
-const CACHE_VERSION = '1.2.0';
+const CACHE_VERSION = '1.3.0';
 const CACHE_NAME = `affecta-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `affecta-runtime-v${CACHE_VERSION}`;
 
@@ -105,6 +105,11 @@ self.addEventListener('fetch', event => {
         url.pathname.startsWith('/add_') ||
         url.pathname.startsWith('/update_') ||
         url.pathname.startsWith('/delete_')) {
+        return;
+    }
+
+    // Пропускаем файлы с версионированием в query string (всегда загружаем с сервера)
+    if (url.searchParams.has('v')) {
         return;
     }
 

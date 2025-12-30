@@ -212,9 +212,40 @@
     {% endif %}
 
     <!-- JavaScript -->
-    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}?v=1.3.0"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=1.3.0"></script>
+    <script src="{{ url_for('static', filename='js/pwa.js') }}?v=1.3.0"></script>
     {% block scripts %}{% endblock %}
+    
+    <!-- Утилита для очистки кеша (доступна в консоли) -->
+    <script>
+        window.clearAffectaCache = async function() {
+            console.log('🧹 Очистка кеша Affecta...');
+            
+            // Удаляем все Service Workers
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) {
+                await registration.unregister();
+                console.log('✅ Service Worker удалён');
+            }
+            
+            // Удаляем все кеши
+            const cacheNames = await caches.keys();
+            for (let cacheName of cacheNames) {
+                await caches.delete(cacheName);
+                console.log('✅ Кеш удалён:', cacheName);
+            }
+            
+            // Очищаем localStorage (опционально)
+            // localStorage.clear();
+            
+            console.log('✅ Кеш полностью очищен! Перезагрузите страницу.');
+            alert('Кеш очищен! Страница будет перезагружена.');
+            window.location.reload(true);
+        };
+        
+        // Показываем в консоли, что функция доступна
+        console.log('💡 Для очистки кеша выполните: clearAffectaCache()');
+    </script>
 </body>
 </html>

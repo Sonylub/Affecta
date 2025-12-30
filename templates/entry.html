@@ -475,7 +475,7 @@
     window.medications = {{ medications|tojson }};
     window.customStates = {{ custom_states|tojson }};
 </script>
-<script src="{{ url_for('static', filename='js/entry.js') }}"></script>
+<script src="{{ url_for('static', filename='js/entry.js') }}?v=1.3.0"></script>
 {% endblock %}
 
 
