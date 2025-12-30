@@ -3,36 +3,292 @@
 {% block title %}Психообразование - Affecta{% endblock %}
 
 {% block content %}
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 max-w-4xl mx-auto transition-colors">
-    <div class="text-center mb-6">
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Психообразование</h1>
-        <p class="text-gray-600 dark:text-gray-400">Информация о биполярном аффективном расстройстве</p>
+<div class="max-w-5xl mx-auto space-y-6">
+    <!-- Заголовок -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 transition-colors">
+        <div class="text-center">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Психообразование</h1>
+            <p class="text-gray-600 dark:text-gray-400">Информация о биполярном расстройстве и руководство по использованию Affecta</p>
+        </div>
     </div>
-    
-    <div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4 md:p-6 mb-6 transition-colors">
-        <div class="flex items-start gap-3">
-            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+
+    <!-- О биполярном расстройстве -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 transition-colors">
+        <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
             </svg>
-            <div>
-                <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Новое обновление</h3>
-                <p class="text-blue-800 dark:text-blue-200">
-                    Раздел психообразования находится в разработке и будет доступен в ближайшем обновлении приложения. 
-                    Здесь будет размещена полезная информация о биполярном аффективном расстройстве, методах самопомощи 
-                    и стратегиях управления симптомами.
+            Что такое биполярное аффективное расстройство (БАР)?
+        </h2>
+        
+        <div class="space-y-4 text-gray-700 dark:text-gray-300">
+            <p>
+                <strong class="text-gray-900 dark:text-gray-100">Биполярное аффективное расстройство (БАР)</strong> — это хроническое психическое заболевание, 
+                характеризующееся чередованием эпизодов повышенного и пониженного настроения. Ранее это состояние называлось 
+                "маниакально-депрессивный психоз".
+            </p>
+            <p>
+                При БАР человек переживает периоды:
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-4">
+                <li><strong>Депрессии</strong> — сниженное настроение, упадок сил, потеря интереса к жизни</li>
+                <li><strong>Мании или гипомании</strong> — приподнятое настроение, повышенная энергия, импульсивность</li>
+                <li><strong>Смешанных состояний</strong> — одновременное присутствие симптомов депрессии и мании</li>
+                <li><strong>Нормального настроения</strong> — периоды стабильности между эпизодами</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Типы БАР -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 transition-colors">
+        <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+            </svg>
+            Типы биполярного расстройства
+        </h2>
+        
+        <div class="space-y-6">
+            <!-- БАР I типа -->
+            <div class="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-500 dark:border-purple-400 rounded-r-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">БАР I типа</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Характеризуется наличием хотя бы одного <strong>маниакального эпизода</strong> в анамнезе. 
+                    Маниакальные эпизоды длятся не менее 7 дней и значительно нарушают функционирование.
                 </p>
+                <div class="bg-white dark:bg-gray-800 rounded p-3 space-y-2 text-sm">
+                    <p><strong class="text-purple-700 dark:text-purple-300">Признаки мании:</strong></p>
+                    <ul class="list-disc list-inside space-y-1 ml-2 text-gray-700 dark:text-gray-300">
+                        <li>Чрезмерно приподнятое настроение или эйфория</li>
+                        <li>Значительно повышенная энергия и активность</li>
+                        <li>Сниженная потребность во сне (2-3 часа достаточно)</li>
+                        <li>Ускоренное мышление, скачка идей</li>
+                        <li>Импульсивные поступки, рискованное поведение</li>
+                        <li>Завышенная самооценка, грандиозные планы</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- БАР II типа -->
+            <div class="bg-cyan-50 dark:bg-cyan-900/30 border-l-4 border-cyan-500 dark:border-cyan-400 rounded-r-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">БАР II типа</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Характеризуется чередованием <strong>депрессивных эпизодов</strong> и <strong>гипоманиакальных состояний</strong>. 
+                    Гипомания — это более мягкая форма мании, которая не приводит к серьёзным нарушениям.
+                </p>
+                <div class="bg-white dark:bg-gray-800 rounded p-3 space-y-2 text-sm">
+                    <p><strong class="text-cyan-700 dark:text-cyan-300">Признаки гипомании:</strong></p>
+                    <ul class="list-disc list-inside space-y-1 ml-2 text-gray-700 dark:text-gray-300">
+                        <li>Повышенное настроение и энергия (менее выражены, чем при мании)</li>
+                        <li>Увеличенная продуктивность и творческая активность</li>
+                        <li>Сниженная потребность во сне (4-5 часов)</li>
+                        <li>Повышенная общительность</li>
+                        <li>Сохранность критики и контроля над поведением</li>
+                        <li>Длительность эпизода — не менее 4 дней</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Циклотимия -->
+            <div class="bg-indigo-50 dark:bg-indigo-900/30 border-l-4 border-indigo-500 dark:border-indigo-400 rounded-r-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Циклотимия</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Более мягкая форма биполярного расстройства с <strong>частыми колебаниями настроения</strong>. 
+                    Симптомы менее выражены, но присутствуют постоянно в течение как минимум 2 лет.
+                </p>
+                <div class="bg-white dark:bg-gray-800 rounded p-3 text-sm text-gray-700 dark:text-gray-300">
+                    <p>Периоды лёгкой депрессии чередуются с периодами лёгкой гипомании, но не достигают 
+                    полноценных депрессивных или гипоманиакальных эпизодов.</p>
+                </div>
+            </div>
+
+            <!-- Смешанные состояния -->
+            <div class="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-500 dark:border-orange-400 rounded-r-lg p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Смешанные эпизоды</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Состояние, при котором одновременно присутствуют симптомы <strong>и депрессии, и мании</strong>. 
+                    Это один из наиболее тяжёлых вариантов течения БАР.
+                </p>
+                <div class="bg-white dark:bg-gray-800 rounded p-3 text-sm">
+                    <p class="text-gray-700 dark:text-gray-300 mb-2"><strong class="text-orange-700 dark:text-orange-300">Примеры смешанных симптомов:</strong></p>
+                    <ul class="list-disc list-inside space-y-1 ml-2 text-gray-700 dark:text-gray-300">
+                        <li>Подавленное настроение + ускоренное мышление</li>
+                        <li>Высокая энергия + суицидальные мысли</li>
+                        <li>Тревога + раздражительность + бессонница</li>
+                        <li>Ажитация + чувство безнадёжности</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Важное примечание -->
+        <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-600 rounded-lg p-4">
+            <div class="flex items-start gap-3">
+                <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <div>
+                    <h4 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">Важно!</h4>
+                    <p class="text-yellow-800 dark:text-yellow-200 text-sm">
+                        Диагноз БАР может поставить только квалифицированный врач-психиатр. Affecta — это инструмент для 
+                        отслеживания симптомов и поддержки лечения, но не для самодиагностики. Если вы замечаете у себя 
+                        признаки биполярного расстройства, обратитесь к специалисту.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="space-y-4 text-gray-700 dark:text-gray-300">
-        <p>
-            Мы работаем над созданием полноценного раздела психообразования, который поможет вам лучше понять 
-            свое состояние и научиться эффективно управлять симптомами.
-        </p>
-        <p>
-            Следите за обновлениями!
-        </p>
+
+    <!-- Основные состояния -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 transition-colors">
+        <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            Отслеживание основных состояний
+        </h2>
+        
+        <div class="space-y-6">
+            <!-- Депрессивное состояние -->
+            <div class="border-l-4 border-cyan-500 dark:border-cyan-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">📉 Депрессивное состояние</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Выберите вариант, который лучше всего описывает максимальную интенсивность депрессивных проявлений за день:
+                </p>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li><strong class="text-gray-900 dark:text-gray-100">Нет</strong> — депрессивные симптомы отсутствуют</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Лёгкое</strong> — присутствуют незначительные симптомы, не влияющие на повседневную активность</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Умеренное</strong> — заметное снижение настроения и энергии, но вы сохраняете работоспособность</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Тяжёлое</strong> — выраженные симптомы, которые мешают выполнять рабочие и бытовые задачи</li>
+                </ul>
+            </div>
+
+            <!-- Маниакальное состояние -->
+            <div class="border-l-4 border-purple-500 dark:border-purple-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">📈 Маниакальное состояние / Гипомания</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Отметьте наивысший уровень маниакальных или гипоманиакальных проявлений за текущий день:
+                </p>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li><strong class="text-gray-900 dark:text-gray-100">Нет</strong> — маниакальные симптомы отсутствуют</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Лёгкое</strong> — повышенное настроение или активность без существенного влияния на функционирование</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Умеренное</strong> — заметный подъём энергии и настроения, но способность работать сохранена</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Тяжёлое</strong> — значительное возбуждение, импульсивность или эйфория, препятствующие нормальной деятельности</li>
+                </ul>
+            </div>
+
+            <!-- Раздражительность -->
+            <div class="border-l-4 border-orange-500 dark:border-orange-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">😤 Раздражительность</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Укажите максимальный уровень раздражительности, который вы испытали сегодня:
+                </p>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li><strong class="text-gray-900 dark:text-gray-100">Нет</strong> — раздражительность не проявлялась</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Лёгкая</strong> — небольшое недовольство или нетерпение</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Умеренная</strong> — заметная раздражительность, но контролируемая</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Тяжёлая</strong> — сильная раздражительность, трудно сдерживаться</li>
+                </ul>
+            </div>
+
+            <!-- Тревога -->
+            <div class="border-l-4 border-yellow-500 dark:border-yellow-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">😰 Тревога</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Выберите наиболее сильный уровень тревожности, который вы ощущали в течение дня:
+                </p>
+                <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+                    <li><strong class="text-gray-900 dark:text-gray-100">Нет</strong> — тревожные переживания отсутствуют</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Лёгкая</strong> — слабое беспокойство, не мешающее повседневным делам</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Умеренная</strong> — ощутимая тревога, но вы справляетесь с задачами</li>
+                    <li><strong class="text-gray-900 dark:text-gray-100">Тяжёлая</strong> — интенсивная тревога, затрудняющая концентрацию и действия</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дополнительные параметры -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 md:p-8 transition-colors">
+        <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center gap-2">
+            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+            </svg>
+            Дополнительные параметры отслеживания
+        </h2>
+        
+        <div class="space-y-6">
+            <!-- Психотические симптомы -->
+            <div class="border-l-4 border-red-500 dark:border-red-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">🔴 Психотические симптомы</h3>
+                <p class="text-gray-700 dark:text-gray-300">
+                    Отметьте эту опцию, если в течение дня вы замечали у себя необычные переживания: нереалистичные убеждения, 
+                    подозрительность без оснований, слуховые или зрительные галлюцинации, ощущение преследования.
+                </p>
+            </div>
+
+            <!-- Психотерапия -->
+            <div class="border-l-4 border-green-500 dark:border-green-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">💬 Психотерапия</h3>
+                <p class="text-gray-700 dark:text-gray-300">
+                    Активируйте эту кнопку, если сегодня вы посетили сеанс психотерапии любого формата: 
+                    когнитивно-поведенческая терапия, психоанализ, групповая терапия или консультация психолога.
+                </p>
+            </div>
+
+            <!-- Лекарства -->
+            <div class="border-l-4 border-blue-500 dark:border-blue-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">💊 Приём лекарств</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Используйте эту функцию для фиксации принятых медикаментов. Вы можете:
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300 ml-4">
+                    <li>Добавить название препарата</li>
+                    <li>Указать время приёма: утро, день, вечер или ночь</li>
+                    <li>Выбрать режим: ежедневный приём или по необходимости</li>
+                    <li>Отмечать факт приёма каждый день</li>
+                </ul>
+            </div>
+
+            <!-- Заметки -->
+            <div class="border-l-4 border-indigo-500 dark:border-indigo-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">✍️ Дневные заметки</h3>
+                <p class="text-gray-700 dark:text-gray-300">
+                    Записывайте здесь любые важные наблюдения: особенности самочувствия, значимые события, 
+                    триггеры настроения, мысли и переживания. Это поможет вам и вашему врачу лучше понять динамику состояния.
+                </p>
+            </div>
+
+            <!-- Пользовательские параметры -->
+            <div class="border-l-4 border-pink-500 dark:border-pink-400 pl-4 py-2">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">⚙️ Пользовательские параметры</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Создавайте собственные показатели для отслеживания индивидуальных симптомов или факторов, важных именно для вас:
+                </p>
+                <ul class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300 ml-4">
+                    <li>Физические симптомы (головная боль, тремор)</li>
+                    <li>Поведенческие паттерны (социальная активность, аппетит)</li>
+                    <li>Внешние факторы (стресс на работе, конфликты)</li>
+                    <li>Любые другие показатели по вашему усмотрению</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Советы -->
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-900 rounded-lg shadow-sm p-6 md:p-8 transition-colors">
+        <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+            </svg>
+            Рекомендации по ведению дневника
+        </h2>
+        <div class="space-y-3 text-gray-700 dark:text-gray-300">
+            <p>✅ <strong>Заполняйте дневник ежедневно</strong> — регулярность помогает выявить закономерности</p>
+            <p>✅ <strong>Будьте честны с собой</strong> — точные данные важнее "правильных" ответов</p>
+            <p>✅ <strong>Отмечайте максимальные проявления</strong> — даже если симптом длился недолго</p>
+            <p>✅ <strong>Используйте заметки</strong> — описывайте контекст и триггеры</p>
+            <p>✅ <strong>Делитесь данными с врачом</strong> — используйте функцию генерации отчётов</p>
+        </div>
     </div>
 </div>
 {% endblock %}

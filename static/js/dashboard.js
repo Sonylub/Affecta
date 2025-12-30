@@ -4,7 +4,6 @@
 
 // Глобальные переменные
 let phaseChart = null;
-let statesChart = null;
 let sleepChart = null;
 let currentRange = '7'; // По умолчанию 7 дней
 let customRange = null; // {start: 'YYYY-MM-DD', end: 'YYYY-MM-DD'} или null
@@ -80,10 +79,6 @@ function setupEventListeners() {
                 currentRange = this.getAttribute('data-range');
                 customRange = null;
                 updateRangeButtons();
-                // #region agent log
-                fetch('http://127.0.0.1:7243/ingest/df5b9261-cb83-488c-983b-e6808ea550f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.js:setupEventListeners',message:'Range button clicked',data:{selectedRange:currentRange},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                console.log('Range button clicked:', currentRange);
-                // #endregion
                 loadDashboardData();
             }
         });
@@ -92,9 +87,6 @@ function setupEventListeners() {
     // Модальное окно для произвольного диапазона
     document.getElementById('cancel-custom-range')?.addEventListener('click', hideCustomRangeModal);
     document.getElementById('apply-custom-range')?.addEventListener('click', applyCustomRange);
-    
-    // Переключение чартов состояний
-    document.getElementById('toggle-states-chart')?.addEventListener('click', toggleStatesChart);
     
     // Переключение чартов сна
     document.getElementById('toggle-sleep-chart')?.addEventListener('click', toggleSleepChart);
@@ -217,17 +209,10 @@ function getDateRange(lastEntryDate = null) {
     const days = parseInt(currentRange);
     startDate.setDate(startDate.getDate() - (days - 1));
     
-    // #region agent log
-    const result = {
+    return {
         start: formatLocalDate(startDate),
         end: formatLocalDate(endDate)
     };
-    const logData = {currentRange,lastEntryDate,customRange:!!customRange,startDate:formatLocalDate(startDate),endDate:formatLocalDate(endDate),today,result};
-    fetch('http://127.0.0.1:7243/ingest/df5b9261-cb83-488c-983b-e6808ea550f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.js:getDateRange',message:'Date range calculation',data:logData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch((e)=>{console.error('Log error:',e);});
-    console.log('getDateRange:', logData);
-    // #endregion
-    
-    return result;
 }
 
 /**
@@ -239,18 +224,8 @@ async function loadDashboardData(isRetry = false) {
         // Сначала загружаем данные с широким диапазоном, чтобы найти последнюю запись
         let dateRange = getDateRange();
         
-        // #region agent log
-        const initialLogData = {currentRange,isRetry,customRange:!!customRange,dateRange,isFirstLoad:!isRetry};
-        fetch('http://127.0.0.1:7243/ingest/df5b9261-cb83-488c-983b-e6808ea550f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.js:loadDashboardData',message:'Initial date range',data:initialLogData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch((e)=>{console.error('Log error:',e);});
-        console.log('loadDashboardData - initial:', initialLogData);
-        // #endregion
-        
         // Если выбран период "7 дней" и это первая загрузка, сначала получаем последнюю дату записи
         const shouldSearchLastEntry = currentRange === '7' && !isRetry && !customRange;
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/df5b9261-cb83-488c-983b-e6808ea550f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.js:loadDashboardData',message:'Checking if should search last entry',data:{currentRange,isRetry,customRange:!!customRange,shouldSearchLastEntry},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch((e)=>{console.error('Log error:',e);});
-        console.log('Should search last entry:', shouldSearchLastEntry, {currentRange, isRetry, customRange});
-        // #endregion
         
         if (shouldSearchLastEntry) {
             // Загружаем данные за последние 30 дней, чтобы найти последнюю запись
@@ -263,67 +238,22 @@ async function loadDashboardData(isRetry = false) {
                 end: formatLocalDate(tempEndDate)
             };
             
-            // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/df5b9261-cb83-488c-983b-e6808ea550f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.js:loadDashboardData',message:'Searching for last entry',data:{tempDateRange},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-            // #endregion
-            
             const tempResponse = await fetch(
                 `/get_dashboard_data?start_date=${tempDateRange.start}&end_date=${tempDateRange.end}`
             );
             
-            // #region agent log
-            console.log('tempResponse.ok:', tempResponse.ok, 'status:', tempResponse.status);
-            // #endregion
-            
             if (tempResponse.ok) {
                 const tempData = await tempResponse.json();
-                
-                // #region agent log
-                console.log('tempData:', {
-                    success: tempData.success,
-                    hasPhaseChartData: !!tempData.phase_chart_data,
-                    phaseChartDataLength: tempData.phase_chart_data?.length || 0,
-                    phaseChartData: tempData.phase_chart_data
-                });
-                // #endregion
                 
                 if (tempData.success && tempData.phase_chart_data && tempData.phase_chart_data.length > 0) {
                     // Находим последнюю дату записи
                     const lastEntryDate = tempData.phase_chart_data[tempData.phase_chart_data.length - 1].date;
                     
-                    // #region agent log
-                    console.log('Last entry found:', lastEntryDate, 'from', tempData.phase_chart_data.length, 'entries');
-                    // #endregion
-                    
                     // Пересчитываем диапазон на основе последней записи
                     dateRange = getDateRange(lastEntryDate);
-                    
-                    // #region agent log
-                    console.log('Recalculated date range with last entry:', dateRange);
-                    console.log('Date range details:', {
-                        start: dateRange.start,
-                        end: dateRange.end,
-                        lastEntryDate: lastEntryDate,
-                        expectedEnd: lastEntryDate,
-                        matches: dateRange.end === lastEntryDate
-                    });
-                    // #endregion
-                } else {
-                    // #region agent log
-                    console.log('No entries found or empty phase_chart_data');
-                    // #endregion
                 }
-            } else {
-                // #region agent log
-                console.log('tempResponse not ok, status:', tempResponse.status);
-                // #endregion
             }
         }
-        
-        // #region agent log
-        console.log('Final dateRange for API call:', dateRange);
-        console.log('API URL:', `/get_dashboard_data?start_date=${dateRange.start}&end_date=${dateRange.end}`);
-        // #endregion
         
         const response = await fetch(
             `/get_dashboard_data?start_date=${dateRange.start}&end_date=${dateRange.end}`
@@ -339,31 +269,17 @@ async function loadDashboardData(isRetry = false) {
             throw new Error(data.message || 'Ошибка загрузки данных');
         }
         
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/df5b9261-cb83-488c-983b-e6808ea550f2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard.js:loadDashboardData',message:'Data loaded successfully',data:{finalDateRange:dateRange,dataEntriesCount:data.phase_chart_data?.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-        
         // Обновление текущей фазы
         updateCurrentPhase(data.current_phase, dateRange.end, data.current_phase_explanation);
         
         // Обновление фазового чарта (возвращает эффективный диапазон данных)
         const effectiveDateRange = updatePhaseChart(data.phase_chart_data, dateRange);
         
-        // Обновление чартов состояний
-        updateStatesChart(data.chart_data, dateRange);
-        
         // Обновление дашборда сна
         updateSleepDashboard(data.sleep_data || {}, dateRange);
         
         // Обновление отображения диапазона (показываем реальный диапазон данных)
         const finalDisplayRange = effectiveDateRange || dateRange;
-        // #region agent log
-        console.log('Updating date range display:', {
-            effectiveDateRange,
-            originalDateRange: dateRange,
-            finalDisplayRange
-        });
-        // #endregion
         updateDateRangeDisplay(finalDisplayRange);
         
         // Загрузка последних записей
@@ -486,24 +402,11 @@ function updateDateRangeDisplay(dateRange) {
     const displayEl = document.getElementById('date-range-display');
     if (!displayEl) return;
     
-    // #region agent log
-    console.log('updateDateRangeDisplay called with:', dateRange);
-    // #endregion
-    
     // Парсим даты из строк YYYY-MM-DD в локальном времени (не UTC)
     const [startYear, startMonth, startDay] = dateRange.start.split('-').map(Number);
     const [endYear, endMonth, endDay] = dateRange.end.split('-').map(Number);
     const start = new Date(startYear, startMonth - 1, startDay);
     const end = new Date(endYear, endMonth - 1, endDay);
-    
-    // #region agent log
-    console.log('Parsed dates:', {
-        start: start.toISOString(),
-        end: end.toISOString(),
-        startLocal: formatLocalDate(start),
-        endLocal: formatLocalDate(end)
-    });
-    // #endregion
     
     // Форматируем даты красиво
     const startFormatted = start.toLocaleDateString('ru-RU', { 
@@ -516,21 +419,6 @@ function updateDateRangeDisplay(dateRange) {
         month: 'long', 
         year: 'numeric' 
     });
-    
-    // #region agent log
-    console.log('Formatted dates for display:', {
-        startFormatted,
-        endFormatted,
-        startDate: start,
-        endDate: end,
-        startGetDate: start.getDate(),
-        endGetDate: end.getDate(),
-        startGetMonth: start.getMonth(),
-        endGetMonth: end.getMonth(),
-        startGetFullYear: start.getFullYear(),
-        endGetFullYear: end.getFullYear()
-    });
-    // #endregion
     
     // Сохраняем текущий диапазон для использования в модальном окне
     displayEl.dataset.startDate = dateRange.start;
@@ -547,10 +435,6 @@ function updateDateRangeDisplay(dateRange) {
             <span class="font-medium text-gray-900 dark:text-gray-100">${endFormatted}</span>
         </div>
     `;
-    
-    // #region agent log
-    console.log('Display element innerHTML set. Current display text:', displayEl.textContent);
-    // #endregion
     
     // Добавляем обработчик клика для открытия модального окна выбора дат
     const clickableElement = document.getElementById('date-range-clickable');
@@ -961,255 +845,6 @@ function updatePhaseChart(phaseData, dateRange) {
 }
 
 /**
- * Обновление чартов состояний
- */
-function updateStatesChart(chartData, dateRange) {
-    const ctx = document.getElementById('statesChart');
-    if (!ctx) return;
-    
-    // Подготовка данных для всех дней в диапазоне
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
-    const allDays = [];
-    const dataMap = {};
-    
-    // Создаем карту данных по датам
-    chartData.dates.forEach((date, index) => {
-        dataMap[date] = {
-            mood: chartData.mood[index],
-            energy: chartData.energy[index],
-            irritability: chartData.irritability[index],
-            anxiety: chartData.anxiety[index]
-        };
-    });
-    
-    // Вычисляем длину исходного диапазона
-    const originalDaysCount = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
-    const shouldTrimRange = originalDaysCount > 7; // Обрезаем только для периодов больше недели
-    
-    // Находим первую и последнюю дату с данными для аккуратного обрезания обрывов
-    let firstDataDate = null;
-    let lastDataDate = null;
-    
-    if (chartData.dates && chartData.dates.length > 0 && shouldTrimRange) {
-        const sortedDates = [...chartData.dates].sort();
-        firstDataDate = sortedDates[0];
-        lastDataDate = sortedDates[sortedDates.length - 1];
-    }
-    
-    // Если есть данные и нужно обрезать, обрезаем диапазон до первой и последней записи
-    let effectiveStartDate = startDate;
-    let effectiveEndDate = endDate;
-    
-    if (firstDataDate && lastDataDate && shouldTrimRange) {
-        // Создаем даты из строк YYYY-MM-DD в локальном времени (не UTC)
-        const [startYear, startMonth, startDay] = firstDataDate.split('-').map(Number);
-        const [endYear, endMonth, endDay] = lastDataDate.split('-').map(Number);
-        effectiveStartDate = new Date(startYear, startMonth - 1, startDay);
-        effectiveEndDate = new Date(endYear, endMonth - 1, endDay);
-        effectiveStartDate.setHours(0, 0, 0, 0);
-        effectiveEndDate.setHours(23, 59, 59, 999);
-    }
-    
-    // Генерируем все дни в эффективном диапазоне
-    // Используем локальные даты напрямую, без конвертации через toISOString
-    const currentDate = new Date(effectiveStartDate);
-    currentDate.setHours(0, 0, 0, 0);
-    // Для включения последнего дня добавляем 1 день к конечной дате
-    const endDateForLoop = new Date(effectiveEndDate);
-    endDateForLoop.setHours(0, 0, 0, 0);
-    endDateForLoop.setDate(endDateForLoop.getDate() + 1); // Добавляем 1 день для включения последнего дня
-    
-    // Функция для форматирования даты в YYYY-MM-DD в локальном времени
-    const formatLocalDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-    
-    while (currentDate < endDateForLoop) { // Используем < вместо <=, так как endDateForLoop уже на день вперед
-        const dateStr = formatLocalDate(currentDate);
-        allDays.push({
-            date: dateStr,
-            data: dataMap[dateStr] || null
-        });
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    // Если нет данных вообще, показываем пустой график
-    if (allDays.length === 0) {
-        if (statesChart) {
-            statesChart.destroy();
-            statesChart = null;
-        }
-        return;
-    }
-    
-    const labels = allDays.map(day => {
-        const d = new Date(day.date);
-        return d.toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' });
-    });
-    
-    // Преобразуем данные и интерполируем пропуски
-    let moodData = allDays.map(day => day.data ? day.data.mood : null);
-    let energyData = allDays.map(day => day.data ? day.data.energy : null);
-    let irritabilityData = allDays.map(day => day.data ? day.data.irritability : null);
-    let anxietyData = allDays.map(day => day.data ? day.data.anxiety : null);
-    
-    // Интерполируем пропуски для каждого набора данных
-    moodData = interpolateGaps(moodData, allDays);
-    energyData = interpolateGaps(energyData, allDays);
-    irritabilityData = interpolateGaps(irritabilityData, allDays);
-    anxietyData = interpolateGaps(anxietyData, allDays);
-    
-    // Вычисляем количество дней для определения стратегии отображения точек
-    const daysCount = allDays.length;
-    const isLongRange = daysCount > 60; // Больше 2 месяцев - считаем длинным диапазоном
-    
-    // Создаем массивы радиусов точек: для длинных диапазонов скрываем все точки
-    const createPointRadii = (dataArray) => {
-        return dataArray.map((value) => {
-            if (value === null || value === undefined) {
-                return 0; // 0 для пропусков
-            }
-            return isLongRange ? 0 : 4; // Скрываем при длинных диапазонах
-        });
-    };
-    
-    const moodPointRadii = createPointRadii(moodData);
-    const energyPointRadii = createPointRadii(energyData);
-    const irritabilityPointRadii = createPointRadii(irritabilityData);
-    const anxietyPointRadii = createPointRadii(anxietyData);
-    const pointHoverRadius = isLongRange ? 6 : 7;
-    
-    if (statesChart) {
-        statesChart.destroy();
-    }
-    
-    // Получаем цвета для текущей темы
-    const chartColors = window.ThemeManager && window.ThemeManager.getChartThemeOptions 
-        ? window.ThemeManager.getChartThemeOptions() 
-        : { text: '#374151', grid: '#E5E7EB', border: '#D1D5DB' };
-    
-    statesChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Настроение',
-                    data: moodData,
-                    borderColor: '#10B981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    pointRadius: moodPointRadii,
-                    pointHoverRadius: pointHoverRadius,
-                    tension: 0.4,
-                    fill: true,
-                    spanGaps: true
-                },
-                {
-                    label: 'Энергия',
-                    data: energyData,
-                    borderColor: '#3B82F6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    pointRadius: energyPointRadii,
-                    pointHoverRadius: pointHoverRadius,
-                    tension: 0.4,
-                    fill: true,
-                    spanGaps: true
-                },
-                {
-                    label: 'Раздражительность',
-                    data: irritabilityData,
-                    borderColor: '#EF4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    pointRadius: irritabilityPointRadii,
-                    pointHoverRadius: pointHoverRadius,
-                    tension: 0.4,
-                    fill: true,
-                    spanGaps: true
-                },
-                {
-                    label: 'Тревога',
-                    data: anxietyData,
-                    borderColor: '#F59E0B',
-                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                    pointRadius: anxietyPointRadii,
-                    pointHoverRadius: pointHoverRadius,
-                    tension: 0.4,
-                    fill: true,
-                    spanGaps: true
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                    labels: {
-                        color: chartColors.text
-                    }
-                },
-                title: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 10,
-                    ticks: {
-                        stepSize: 1,
-                        color: chartColors.text
-                    },
-                    grid: {
-                        color: chartColors.grid
-                    },
-                    border: {
-                        color: chartColors.border
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 0,
-                        color: chartColors.text
-                    },
-                    border: {
-                        color: chartColors.border
-                    }
-                }
-            }
-        }
-    });
-}
-
-/**
- * Переключение видимости чартов состояний
- */
-function toggleStatesChart() {
-    const container = document.getElementById('states-chart-container');
-    const toggleText = document.getElementById('toggle-states-text');
-    
-    if (!container) return;
-    
-    if (container.classList.contains('hidden')) {
-        container.classList.remove('hidden');
-        if (toggleText) toggleText.textContent = 'Свернуть';
-    } else {
-        container.classList.add('hidden');
-        if (toggleText) toggleText.textContent = 'Развернуть';
-    }
-}
-
-/**
  * Переключение видимости дашборда сна
  */
 function toggleSleepChart() {
@@ -1293,7 +928,7 @@ function updateSleepDashboard(sleepData, dateRange) {
         }
         return;
     }
-    
+     
     // Расчет статистики
     const hours = sleepData.hours.filter(h => h > 0);
     const avgHours = hours.length > 0 ? (hours.reduce((a, b) => a + b, 0) / hours.length).toFixed(1) : 0;

@@ -7,6 +7,27 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Мягкая светлая тема - переопределение белого фона */
+:root:not(.dark) {
+    --bg-primary: #F8FAFC;
+    --bg-secondary: #F1F5F9;
+    --bg-card: #FFFFFF;
+    --bg-card-hover: #F8FAFC;
+}
+
+/* Применение мягких цветов для светлой темы */
+body:not(.dark) {
+    background-color: var(--bg-primary) !important;
+}
+
+.bg-gray-50:not(.dark *) {
+    background-color: var(--bg-primary) !important;
+}
+
+.bg-white:not(.dark *) {
+    background-color: var(--bg-card) !important;
+}
+
 /* Стили для textarea, select и input - светлая тема */
 textarea,
 select,
@@ -16,7 +37,7 @@ input[type="date"],
 input[type="email"],
 input[type="password"],
 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]) {
-    background-color: #FFFFFF !important;
+    background-color: #FAFBFC !important;
     color: #111827 !important;
     border-color: #D1D5DB !important;
 }
@@ -28,7 +49,7 @@ input::placeholder {
 }
 
 select option {
-    background-color: #FFFFFF !important;
+    background-color: #FAFBFC !important;
     color: #111827 !important;
 }
 
@@ -39,7 +60,7 @@ select option {
 #addMedicationModal input[type="number"],
 #addCustomStateModal select,
 #addMedicationModal select {
-    background-color: #FFFFFF !important;
+    background-color: #FAFBFC !important;
     color: #111827 !important;
 }
 
@@ -206,7 +227,7 @@ input[type="radio"]:hover {
 
 /* Стили для таблиц */
 .table-hover tbody tr:hover {
-    background-color: #F9FAFB;
+    background-color: #F1F5F9;
     transition: background-color 0.2s ease;
 }
 
@@ -319,8 +340,8 @@ input[type="radio"]:hover {
 
 /* Стили для статистики */
 .stat-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #FEFEFE 0%, #F8FAFC 100%);
+    border: 1px solid #E2E8F0;
     transition: all 0.3s ease;
 }
 
@@ -506,7 +527,7 @@ input[type="radio"]:hover {
 .custom-binary-btn:hover,
 .custom-cat-btn:hover,
 .day-type-btn:hover {
-    background-color: #F9FAFB;
+    background-color: #F1F5F9;
     color: #1F2937;
 }
 
@@ -548,11 +569,11 @@ input[type="radio"]:hover {
     border: 2px solid #E5E7EB;
     border-radius: 6px;
     transition: all 0.2s ease;
-    background-color: #FFFFFF;
+    background-color: #FAFBFC;
 }
 
 .custom-state-multi-checkbox label:hover {
-    background-color: #F9FAFB;
+    background-color: #F1F5F9;
     border-color: #D1D5DB;
 }
 

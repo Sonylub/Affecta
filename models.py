@@ -14,6 +14,7 @@
 
 import os
 import pymysql
+from contextlib import contextmanager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
@@ -72,16 +73,27 @@ class Database:
         if self.connection:
             self.connection.close()
     
-    def execute_query(self, query, params=None, fetch=True):
-        """Выполнение SQL запроса"""
+    @contextmanager
+    def _transaction(self):
+        """Контекстный менеджер для транзакций"""
         try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(query, params or ())
-                self.connection.commit()
-                return cursor.fetchall() if fetch else cursor.lastrowid
-        except pymysql.Error:
+            yield self.connection
+            self.connection.commit()
+        except Exception:
             self.connection.rollback()
             raise
+    
+    def execute_query(self, query, params=None, fetch=True):
+        """Выполнение SQL запроса"""
+        with self._transaction():
+            with self.connection.cursor() as cursor:
+                cursor.execute(query, params or ())
+                return cursor.fetchall() if fetch else cursor.lastrowid
+    
+    def _get_user_items(self, table, user_id, extra_query=""):
+        """Универсальный метод получения элементов пользователя"""
+        query = f"SELECT * FROM {table} WHERE user_id = %s {extra_query} ORDER BY name ASC"
+        return self.execute_query(query, (user_id,))
     
     # Методы для работы с пользователями
     def create_user(self, username, password):
@@ -247,12 +259,7 @@ class Database:
     
     def get_user_medications(self, user_id):
         """Получение списка лекарств пользователя"""
-        query = """
-            SELECT * FROM medications 
-            WHERE user_id = %s 
-            ORDER BY name ASC
-        """
-        return self.execute_query(query, (user_id,))
+        return self._get_user_items('medications', user_id)
     
     def add_medication_intake(self, entry_id, med_id, taken='full'):
         """Добавление информации о приеме лекарства"""
@@ -284,12 +291,7 @@ class Database:
     
     def get_user_trackers(self, user_id):
         """Получение списка кастомных трекеров пользователя"""
-        query = """
-            SELECT * FROM custom_trackers 
-            WHERE user_id = %s 
-            ORDER BY name ASC
-        """
-        return self.execute_query(query, (user_id,))
+        return self._get_user_items('custom_trackers', user_id)
     
     def add_custom_value(self, entry_id, tracker_id, value):
         """Добавление значения кастомного трекера"""
@@ -443,7 +445,14 @@ class Database:
         self.execute_query(query, (name, dosage_mg, time_of_day, frequency, med_id, user_id), fetch=False)
 
 class User(UserMixin):
-    """Класс пользователя для Flask-Login"""
+    """Класс пользователя для Flask-Login
+    
+    UserMixin уже предоставляет методы:
+    - is_authenticated() -> True
+    - is_active() -> True  
+    - is_anonymous() -> False
+    Поэтому нам нужен только get_id()
+    """
     
     def __init__(self, user_id, username, password_hash):
         self.id = user_id
@@ -453,15 +462,3 @@ class User(UserMixin):
     def get_id(self):
         """Возвращает ID пользователя"""
         return str(self.id)
-    
-    def is_authenticated(self):
-        """Проверка аутентификации"""
-        return True
-    
-    def is_active(self):
-        """Проверка активности"""
-        return True
-    
-    def is_anonymous(self):
-        """Проверка анонимности"""
-        return False

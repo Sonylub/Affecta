@@ -5,6 +5,7 @@
 let medications = [];
 let customStates = [];
 let selectedDate = window.today || new Date().toISOString().split('T')[0];
+let isLoadingData = false; // Флаг для предотвращения автосохранения при загрузке данных
 
 const STATE_SCORE = {
     none: 0,
@@ -92,10 +93,16 @@ function initializeEntryPage() {
     updateMedicationsList();
     updateCustomStatesList();
     
-    // Подключаем обработчик сохранения
-    const entryForm = document.getElementById('entryForm');
-    if (entryForm) {
-        entryForm.addEventListener('submit', saveEntry);
+    // Инициализируем улучшенные заметки
+    initializeEnhancedNotes();
+    
+    // Инициализируем автосохранение
+    initializeAutoSave();
+    
+    // Подключаем обработчик кнопки "Определить тип дня"
+    const determineDayTypeBtn = document.getElementById('determine-day-type-btn');
+    if (determineDayTypeBtn) {
+        determineDayTypeBtn.addEventListener('click', determineDayType);
     }
     
     // Загружаем запись за выбранную дату
@@ -175,6 +182,7 @@ function updateDateDisplay() {
     if (!dateDisplay) return;
     
     const date = new Date(selectedDate);
+    date.setHours(0, 0, 0, 0);
     const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -183,6 +191,25 @@ function updateDateDisplay() {
     if (date.getFullYear() !== today.getFullYear()) dateStr += ` ${date.getFullYear()}`;
     
     dateDisplay.textContent = dateStr;
+    
+    // Подсветка для сегодняшнего дня
+    const isToday = date.getTime() === today.getTime();
+    
+    // Удаляем предыдущие классы подсветки
+    dateDisplay.classList.remove(
+        'bg-indigo-100', 'dark:bg-indigo-900',
+        'text-indigo-700', 'dark:text-indigo-200',
+        'px-3', 'py-1', 'rounded-md', 'font-semibold'
+    );
+    
+    // Добавляем подсветку, если это сегодня
+    if (isToday) {
+        dateDisplay.classList.add(
+            'bg-indigo-100', 'dark:bg-indigo-900',
+            'text-indigo-700', 'dark:text-indigo-200',
+            'px-3', 'py-1', 'rounded-md', 'font-semibold'
+        );
+    }
 }
 
 /**
@@ -472,6 +499,12 @@ function updateDayTypeUI(dt, explanation = null) {
             infoBtn.classList.add('hidden');
         }
     }
+    
+    // Показываем кнопку "Изменить" только если тип дня определен
+    const editBtn = document.getElementById('day-type-edit-btn');
+    if (editBtn) {
+        editBtn.style.display = dt ? 'block' : 'none';
+    }
 }
 
 function showDayTypeExplanation() {
@@ -531,9 +564,147 @@ function closeDayTypeExplanation() {
 }
 
 /**
+ * Переключение редактора типа дня
+ */
+function toggleDayTypeEditor() {
+    const editor = document.getElementById('day-type-editor');
+    const display = document.getElementById('day-type-display');
+    const editBtn = document.getElementById('day-type-edit-btn');
+    
+    if (!editor || !display) return;
+    
+    if (editor.classList.contains('hidden')) {
+        // Показываем редактор
+        editor.classList.remove('hidden');
+        display.classList.add('opacity-50');
+        editBtn.textContent = 'Отменить';
+        
+        // Устанавливаем текущее значение в селект
+        const select = document.getElementById('day-type-select');
+        if (select) {
+            // Получаем текущий тип дня из отображения
+            const currentType = getCurrentDayType();
+            if (currentType) {
+                select.value = currentType;
+            }
+        }
+    } else {
+        // Скрываем редактор
+        cancelDayTypeEdit();
+    }
+}
+
+/**
+ * Получение текущего типа дня
+ */
+function getCurrentDayType() {
+    const display = document.getElementById('day-type-display');
+    if (!display) return null;
+    
+    // Проверяем классы для определения типа
+    if (display.classList.contains('bg-red-50') || display.classList.contains('dark:bg-red-900')) {
+        return 'depressive';
+    } else if (display.classList.contains('bg-yellow-50') || display.classList.contains('dark:bg-yellow-900')) {
+        return 'hypomanic';
+    } else if (display.classList.contains('bg-purple-50') || display.classList.contains('dark:bg-purple-900')) {
+        return 'mixed';
+    } else {
+        return 'normal';
+    }
+}
+
+/**
+ * Сохранение пользовательского типа дня
+ */
+async function saveDayType() {
+    const select = document.getElementById('day-type-select');
+    if (!select) return;
+    
+    const selectedType = select.value;
+    if (!selectedType) return;
+    
+    // Сохраняем значение в скрытое поле для использования при автосохранении
+    const form = document.getElementById('entryForm');
+    if (form) {
+        let manualDayTypeInput = form.querySelector('input[name="manual_day_type"]');
+        if (!manualDayTypeInput) {
+            manualDayTypeInput = document.createElement('input');
+            manualDayTypeInput.type = 'hidden';
+            manualDayTypeInput.name = 'manual_day_type';
+            form.appendChild(manualDayTypeInput);
+        }
+        manualDayTypeInput.value = selectedType;
+    }
+    
+    // Сохраняем через API
+    try {
+        const response = await fetch('/update_day_type', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                date: selectedDate,
+                day_type: selectedType
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Обновляем отображение
+            updateDayTypeUI(selectedType, null);
+            cancelDayTypeEdit();
+            StabilUtils.showMessage('Тип дня изменен', 'success');
+            
+            // Триггерим автосохранение для обновления данных
+            if (typeof scheduleAutoSave === 'function') {
+                scheduleAutoSave();
+            }
+        } else {
+            StabilUtils.showMessage(result.message || 'Ошибка при изменении типа дня', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка сохранения типа дня:', error);
+        StabilUtils.showMessage('Ошибка при изменении типа дня', 'error');
+    }
+}
+
+/**
+ * Отмена редактирования типа дня
+ */
+function cancelDayTypeEdit() {
+    const editor = document.getElementById('day-type-editor');
+    const display = document.getElementById('day-type-display');
+    const editBtn = document.getElementById('day-type-edit-btn');
+    
+    if (editor) {
+        editor.classList.add('hidden');
+    }
+    if (display) {
+        display.classList.remove('opacity-50');
+    }
+    if (editBtn) {
+        editBtn.textContent = 'Изменить';
+    }
+    
+    // Удаляем скрытое поле, если оно было создано
+    const form = document.getElementById('entryForm');
+    if (form) {
+        const manualDayTypeInput = form.querySelector('input[name="manual_day_type"]');
+        if (manualDayTypeInput) {
+            manualDayTypeInput.remove();
+        }
+    }
+}
+
+/**
  * Загрузка записи за конкретную дату
  */
 async function loadEntryForDate(dateStr) {
+    // Устанавливаем флаг загрузки, чтобы предотвратить автосохранение
+    isLoadingData = true;
+    
     // При смене даты сразу очищаем визуальное состояние,
     // чтобы не оставались подсветки и тип дня от предыдущей даты.
     try {
@@ -555,8 +726,18 @@ async function loadEntryForDate(dateStr) {
         
         // Очищаем заметки сразу при смене даты
         const notesField = document.getElementById('notes');
+        const notesCounter = document.getElementById('notes-counter');
         if (notesField) {
             notesField.value = '';
+            // Авторасширение после очистки
+            if (typeof window.autoResizeTextarea === 'function') {
+                window.autoResizeTextarea(notesField);
+            }
+            // Обновляем счетчик
+            if (notesCounter) {
+                notesCounter.textContent = '0 символов';
+                notesCounter.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+            }
         }
     } catch (e) {
         console.error('Ошибка предварительной очистки при смене даты:', e);
@@ -585,7 +766,26 @@ async function loadEntryForDate(dateStr) {
             document.getElementById('sleep_quality').value = 'average';
 
             // Заметки и вторичные блоки
-            document.getElementById('notes').value = '';
+            const notesField = document.getElementById('notes');
+            const notesCounter = document.getElementById('notes-counter');
+            if (notesField) {
+                notesField.value = '';
+                // Обновляем счетчик
+                if (notesCounter) {
+                    notesCounter.textContent = '0 символов';
+                    notesCounter.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+                }
+            }
+            
+            // Очищаем скрытое поле типа дня
+            const form = document.getElementById('entryForm');
+            if (form) {
+                const manualDayTypeInput = form.querySelector('input[name="manual_day_type"]');
+                if (manualDayTypeInput) {
+                    manualDayTypeInput.remove();
+                }
+            }
+            
             resetMedicationsSelection();
             resetCustomStatesSelection();
             
@@ -599,6 +799,11 @@ async function loadEntryForDate(dateStr) {
 
             // Тип дня пока не определён для новой незаполненной записи — скрываем блок
             updateDayTypeUI(null);
+            
+            // Загружаем черновик заметок, если есть
+            if (typeof loadNotesDraft === 'function') {
+                loadNotesDraft();
+            }
         };
 
         if (!entry) {
@@ -686,6 +891,7 @@ async function loadEntryForDate(dateStr) {
 
         // Заметки - обнуляем, если нет данных или пустая строка
         const notesField = document.getElementById('notes');
+        const notesCounter = document.getElementById('notes-counter');
         if (notesField) {
             // Проверяем, есть ли реальные заметки (не null, не undefined, не пустая строка)
             const notesValue = entry.notes;
@@ -693,11 +899,43 @@ async function loadEntryForDate(dateStr) {
                 notesField.value = notesValue;
             } else {
                 notesField.value = '';
+                // Если заметок нет, пытаемся загрузить черновик
+                if (typeof loadNotesDraft === 'function') {
+                    loadNotesDraft();
+                }
+            }
+            // Авторасширение после загрузки данных
+            if (typeof window.autoResizeTextarea === 'function') {
+                window.autoResizeTextarea(notesField);
+            }
+            // Обновляем счетчик
+            if (notesCounter) {
+                const text = notesField.value;
+                const charCount = text.length;
+                const wordCount = text.trim() ? text.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+                notesCounter.textContent = `${charCount} символов, ${wordCount} слов`;
+                notesCounter.classList.toggle('text-indigo-600', charCount > 0);
+                notesCounter.classList.toggle('dark:text-indigo-400', charCount > 0);
             }
         }
 
         // Обновляем блок типа дня по данным записи (если сервер уже рассчитал)
         updateDayTypeUI(entry.day_type);
+        
+        // Если тип дня был установлен, сохраняем его в скрытое поле для автосохранения
+        if (entry.day_type) {
+            const form = document.getElementById('entryForm');
+            if (form) {
+                let manualDayTypeInput = form.querySelector('input[name="manual_day_type"]');
+                if (!manualDayTypeInput) {
+                    manualDayTypeInput = document.createElement('input');
+                    manualDayTypeInput.type = 'hidden';
+                    manualDayTypeInput.name = 'manual_day_type';
+                    form.appendChild(manualDayTypeInput);
+                }
+                manualDayTypeInput.value = entry.day_type;
+            }
+        }
 
         // Лекарства
         resetMedicationsSelection();
@@ -720,6 +958,11 @@ async function loadEntryForDate(dateStr) {
         }
     } catch (error) {
         console.error('Ошибка загрузки записи:', error);
+    } finally {
+        // Снимаем флаг загрузки после завершения
+        setTimeout(() => {
+            isLoadingData = false;
+        }, 500);
     }
 }
 
@@ -1146,17 +1389,33 @@ function setCustomStateValue(stateId, value) {
 }
 
 /**
- * Сохранение записи
+ * Сбор данных формы (оптимизированная версия)
  */
-async function saveEntry(e) {
-    e.preventDefault();
+function collectFormData() {
+    const form = document.getElementById('entryForm');
+    if (!form) return null;
     
-    const formData = new FormData(e.target);
+    // Используем прямые селекторы вместо FormData для ускорения
+    const getValue = (name) => {
+        const input = form.querySelector(`[name="${name}"]`);
+        return input ? input.value : '';
+    };
     
-    const depressive_state = formData.get('depressive_state') || 'none';
-    const manic_state = formData.get('manic_state') || 'none';
-    const irritable_state = formData.get('irritable_state') || 'none';
-    const anxious_state = formData.get('anxious_state') || 'none';
+    const depressive_state = getValue('depressive_state') || 'none';
+    const manic_state = getValue('manic_state') || 'none';
+    const irritable_state = getValue('irritable_state') || 'none';
+    const anxious_state = getValue('anxious_state') || 'none';
+    
+    const sleepHoursInput = form.querySelector('[name="sleep_hours"]');
+    const sleepQualityInput = form.querySelector('[name="sleep_quality"]');
+    const notesInput = form.querySelector('[name="notes"]');
+    const psychoticInput = form.querySelector('[name="psychotic_symptoms"]');
+    const psychotherapyInput = form.querySelector('[name="psychotherapy"]');
+
+    // Проверяем, установлен ли тип дня вручную пользователем
+    // Используем скрытое поле для хранения пользовательского выбора
+    const manualDayTypeInput = form.querySelector('input[name="manual_day_type"]');
+    const manualDayType = manualDayTypeInput ? manualDayTypeInput.value : null;
 
     // Числовые прокси для обратной совместимости с аналитикой
     const data = {
@@ -1165,9 +1424,9 @@ async function saveEntry(e) {
         irritability: STATE_SCORE[irritable_state] ?? 0,
         anxiety: STATE_SCORE[anxious_state] ?? 0,
         energy: STATE_SCORE[manic_state] ?? 5,
-        sleep_hours: parseFloat(formData.get('sleep_hours')),
-        sleep_quality: formData.get('sleep_quality'),
-        notes: formData.get('notes'),
+        sleep_hours: sleepHoursInput ? parseFloat(sleepHoursInput.value) : 0,
+        sleep_quality: sleepQualityInput ? sleepQualityInput.value : 'average',
+        notes: notesInput ? notesInput.value : '',
         medications: {},
         custom_values: {},
         custom_state_values: {},
@@ -1175,34 +1434,37 @@ async function saveEntry(e) {
         manic_state,
         irritable_state,
         anxious_state,
-        psychotic_symptoms: formData.get('psychotic_symptoms') === 'yes',
-        psychotherapy: formData.get('psychotherapy') === 'yes'
+        psychotic_symptoms: psychoticInput ? psychoticInput.value === 'yes' : false,
+        psychotherapy: psychotherapyInput ? psychotherapyInput.value === 'yes' : false
     };
     
-    // Лекарства (теперь просто да/нет)
+    // Добавляем пользовательский тип дня, если он установлен вручную
+    if (manualDayType && manualDayType !== '') {
+        data.day_type = manualDayType;
+    }
+    
+    // Лекарства (оптимизированный сбор через прямые селекторы)
     medications.forEach(med => {
-        const isChecked = formData.get(`medication_check_${med.id}`) !== null;
-        data.medications[med.id] = isChecked;
+        const checkbox = form.querySelector(`[name="medication_check_${med.id}"]`);
+        data.medications[med.id] = checkbox ? checkbox.checked : false;
     });
     
-    
-    // Пользовательские состояния
+    // Пользовательские состояния (оптимизированный сбор)
     customStates.forEach(state => {
         let value = null;
         
         switch (state.mark_type) {
             case 'binary':
-                value = formData.get(`custom_state_${state.id}`);
-                break;
             case 'categorical':
-                value = formData.get(`custom_state_${state.id}`);
-                break;
             case 'numeric':
-                value = formData.get(`custom_state_${state.id}`);
+                const input = form.querySelector(`[name="custom_state_${state.id}"]`);
+                value = input ? input.value : null;
                 break;
             case 'multi_checkbox':
-                const checkboxes = document.querySelectorAll(`input[name="custom_state_${state.id}"]:checked`);
-                value = Array.from(checkboxes).map(cb => cb.value).join(',');
+                const checkboxes = form.querySelectorAll(`input[name="custom_state_${state.id}"]:checked`);
+                if (checkboxes.length > 0) {
+                    value = Array.from(checkboxes).map(cb => cb.value).join(',');
+                }
                 break;
         }
         
@@ -1210,6 +1472,21 @@ async function saveEntry(e) {
             data.custom_state_values[state.id] = value;
         }
     });
+    
+    return data;
+}
+
+/**
+ * Сохранение записи
+ */
+async function saveEntry(showMessage = true) {
+    const data = collectFormData();
+    if (!data) {
+        if (showMessage) {
+            StabilUtils.showMessage('Не удалось собрать данные формы', 'error');
+        }
+        return { success: false, error: 'Не удалось собрать данные формы' };
+    }
     
     try {
         const response = await fetch('/save_entry', {
@@ -1223,16 +1500,31 @@ async function saveEntry(e) {
         const result = await response.json();
         
         if (result.success) {
-            StabilUtils.showMessage('Запись сохранена успешно!', 'success');
+            if (showMessage) {
+                StabilUtils.showMessage('Запись сохранена успешно!', 'success');
+            }
 
             // Обновляем блок типа дня по ответу сервера (если он есть)
             updateDayTypeUI(result.day_type, result.day_type_explanation);
+            
+            // Очищаем черновик заметок после успешного сохранения
+            if (typeof clearNotesDraft === 'function') {
+                clearNotesDraft();
+            }
+            
+            return { success: true, day_type: result.day_type, day_type_explanation: result.day_type_explanation };
         } else {
-            StabilUtils.showMessage(result.message || 'Ошибка при сохранении записи', 'error');
+            if (showMessage) {
+                StabilUtils.showMessage(result.message || 'Ошибка при сохранении записи', 'error');
+            }
+            return { success: false, error: result.message };
         }
     } catch (error) {
         console.error('Ошибка сохранения записи:', error);
-        StabilUtils.showMessage('Ошибка при сохранении записи', 'error');
+        if (showMessage) {
+            StabilUtils.showMessage('Ошибка при сохранении записи', 'error');
+        }
+        return { success: false, error: error.message };
     }
 }
 
@@ -1645,6 +1937,412 @@ function resetNewStateOptions() {
     `;
 }
 
+/**
+ * Инициализация улучшенных заметок (дневник)
+ */
+function initializeEnhancedNotes() {
+    const notesField = document.getElementById('notes');
+    const notesCounter = document.getElementById('notes-counter');
+    const notesPrompts = document.getElementById('notes-prompts');
+    const promptButtons = document.querySelectorAll('.prompt-btn');
+    const notesExpandBtn = document.getElementById('notes-expand-btn');
+    const notesFullscreenModal = document.getElementById('notes-fullscreen-modal');
+    const notesFullscreen = document.getElementById('notes-fullscreen');
+    const notesFullscreenCounter = document.getElementById('notes-fullscreen-counter');
+    const notesCloseFullscreen = document.getElementById('notes-close-fullscreen');
+    const autosaveIndicator = document.getElementById('notes-autosave-indicator');
+    const autosaveStatus = document.getElementById('autosave-status');
+    
+    if (!notesField) return;
+    
+    // Обновление счетчика символов и слов
+    function updateCounter(field, counterElement) {
+        const text = field.value;
+        const charCount = text.length;
+        const wordCount = text.trim() ? text.trim().split(/\s+/).filter(w => w.length > 0).length : 0;
+        
+        if (counterElement) {
+            counterElement.textContent = `${charCount} символов, ${wordCount} слов`;
+            counterElement.classList.toggle('text-indigo-600', charCount > 0);
+            counterElement.classList.toggle('dark:text-indigo-400', charCount > 0);
+        }
+    }
+    
+    // Автосохранение черновика в localStorage
+    let autosaveTimeout;
+    function autosave() {
+        clearTimeout(autosaveTimeout);
+        autosaveTimeout = setTimeout(() => {
+            const draftKey = `entry_draft_${selectedDate}`;
+            localStorage.setItem(draftKey, notesField.value);
+            
+            if (autosaveIndicator && autosaveStatus) {
+                autosaveIndicator.classList.remove('hidden');
+                autosaveStatus.textContent = 'Черновик сохранен';
+                setTimeout(() => {
+                    autosaveIndicator.classList.add('hidden');
+                }, 2000);
+            }
+        }, 2000); // Сохраняем через 2 секунды после последнего изменения
+    }
+    
+    // Загрузка черновика из localStorage
+    function loadDraft() {
+        const draftKey = `entry_draft_${selectedDate}`;
+        const draft = localStorage.getItem(draftKey);
+        // Загружаем черновик только если поле пустое и нет сохраненной записи
+        if (draft && !notesField.value.trim()) {
+            notesField.value = draft;
+            if (typeof window.autoResizeTextarea === 'function') {
+                window.autoResizeTextarea(notesField);
+            }
+            updateCounter(notesField, notesCounter);
+        }
+    }
+    
+    // Очистка черновика после успешного сохранения
+    function clearDraft() {
+        const draftKey = `entry_draft_${selectedDate}`;
+        localStorage.removeItem(draftKey);
+    }
+    
+    // Функция авторасширения textarea (доступна глобально)
+    window.autoResizeTextarea = function(textarea) {
+        if (!textarea) return;
+        // Сбрасываем высоту для правильного расчета scrollHeight
+        textarea.style.height = 'auto';
+        // Устанавливаем новую высоту на основе содержимого
+        textarea.style.height = textarea.scrollHeight + 'px';
+    };
+    
+    // Инициализируем авторасширение при загрузке
+    if (notesField && typeof window.autoResizeTextarea === 'function') {
+        window.autoResizeTextarea(notesField);
+    }
+    
+    // Обработчики событий для основного поля
+    notesField.addEventListener('input', () => {
+        if (typeof window.autoResizeTextarea === 'function') {
+            window.autoResizeTextarea(notesField);
+        }
+        updateCounter(notesField, notesCounter);
+        autosave();
+    });
+    
+    // Подсказки для размышления
+    promptButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const prompt = btn.textContent.trim();
+            const currentText = notesField.value;
+            const newText = currentText ? `${currentText}\n\n${prompt}\n` : `${prompt}\n`;
+            notesField.value = newText;
+            if (typeof window.autoResizeTextarea === 'function') {
+                window.autoResizeTextarea(notesField);
+            }
+            notesField.focus();
+            // Перемещаем курсор в конец
+            notesField.setSelectionRange(notesField.value.length, notesField.value.length);
+            updateCounter(notesField, notesCounter);
+            autosave();
+        });
+    });
+    
+    // Скрытие подсказок при начале ввода
+    notesField.addEventListener('focus', () => {
+        if (notesPrompts && notesField.value.length > 50) {
+            notesPrompts.style.opacity = '0.6';
+        }
+    });
+    
+    notesField.addEventListener('blur', () => {
+        if (notesPrompts) {
+            notesPrompts.style.opacity = '1';
+        }
+    });
+    
+    // Полноэкранный режим редактирования
+    if (notesExpandBtn && notesFullscreenModal && notesFullscreen) {
+        notesExpandBtn.addEventListener('click', () => {
+            notesFullscreen.value = notesField.value;
+            updateCounter(notesFullscreen, notesFullscreenCounter);
+            notesFullscreenModal.classList.remove('hidden');
+            notesFullscreen.focus();
+            
+            // Синхронизация с основным полем
+            notesFullscreen.addEventListener('input', () => {
+                notesField.value = notesFullscreen.value;
+                if (typeof window.autoResizeTextarea === 'function') {
+                    window.autoResizeTextarea(notesField);
+                }
+                updateCounter(notesField, notesCounter);
+                updateCounter(notesFullscreen, notesFullscreenCounter);
+                autosave();
+            });
+        });
+        
+        if (notesCloseFullscreen) {
+            notesCloseFullscreen.addEventListener('click', () => {
+                notesFullscreenModal.classList.add('hidden');
+            });
+        }
+        
+        // Закрытие по Escape
+        notesFullscreenModal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                notesFullscreenModal.classList.add('hidden');
+            }
+        });
+        
+        // Закрытие при клике вне модального окна
+        notesFullscreenModal.addEventListener('click', (e) => {
+            if (e.target === notesFullscreenModal) {
+                notesFullscreenModal.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Инициализация при загрузке
+    updateCounter(notesField, notesCounter);
+    
+    // Функция для загрузки черновика заметок (будет вызвана из loadEntryForDate)
+    window.loadNotesDraft = function() {
+        loadDraft();
+    };
+    
+    // Функция для очистки черновика заметок (будет вызвана из saveEntry)
+    window.clearNotesDraft = function() {
+        clearDraft();
+    };
+}
+
+/**
+ * Инициализация автосохранения
+ */
+function initializeAutoSave() {
+    let autosaveTimeout;
+    let isSaving = false;
+    let lastSavedDataHash = null; // Хэш последних сохраненных данных
+    const statusText = document.getElementById('autosave-text');
+    
+    // Кэшируем селекторы для быстрого доступа
+    const form = document.getElementById('entryForm');
+    if (!form) return;
+    
+    function showStatus(message, isSuccess = true) {
+        if (statusText) {
+            statusText.textContent = message;
+            statusText.classList.remove('text-gray-500', 'text-green-600', 'text-red-600', 'dark:text-gray-400', 'dark:text-green-400', 'dark:text-red-400');
+            if (isSuccess) {
+                statusText.classList.add('text-green-600', 'dark:text-green-400');
+            } else {
+                statusText.classList.add('text-red-600', 'dark:text-red-400');
+            }
+        }
+    }
+    
+    function resetStatus() {
+        if (statusText) {
+            setTimeout(() => {
+                statusText.textContent = 'Изменения сохраняются автоматически';
+                statusText.classList.remove('text-green-600', 'text-red-600', 'dark:text-green-400', 'dark:text-red-400');
+                statusText.classList.add('text-gray-500', 'dark:text-gray-400');
+            }, 1500);
+        }
+    }
+    
+    // Быстрое вычисление хэша данных для сравнения
+    function getDataHash(data) {
+        return JSON.stringify({
+            d: data.depressive_state,
+            m: data.manic_state,
+            i: data.irritable_state,
+            a: data.anxious_state,
+            ps: data.psychotic_symptoms,
+            pt: data.psychotherapy,
+            sh: data.sleep_hours,
+            sq: data.sleep_quality,
+            n: data.notes,
+            med: Object.keys(data.medications).sort().map(k => `${k}:${data.medications[k]}`).join(','),
+            csv: Object.keys(data.custom_state_values).sort().map(k => `${k}:${data.custom_state_values[k]}`).join(',')
+        });
+    }
+    
+    async function performAutoSave() {
+        if (isSaving || isLoadingData) return;
+        
+        // Быстро собираем данные
+        const data = collectFormData();
+        if (!data) return;
+        
+        // Проверяем, изменились ли данные
+        const currentHash = getDataHash(data);
+        if (currentHash === lastSavedDataHash) {
+            // Данные не изменились, пропускаем сохранение
+            return;
+        }
+        
+        isSaving = true;
+        showStatus('Сохранение...', true);
+        
+        try {
+            const response = await fetch('/save_entry', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result && result.success) {
+                lastSavedDataHash = currentHash; // Сохраняем хэш успешно сохраненных данных
+                showStatus('✓ Сохранено', true);
+                resetStatus();
+                
+                // Обновляем блок типа дня по ответу сервера (если он есть)
+                if (result.day_type !== undefined) {
+                    updateDayTypeUI(result.day_type, result.day_type_explanation);
+                }
+                
+                // Очищаем черновик заметок после успешного сохранения
+                if (typeof clearNotesDraft === 'function') {
+                    clearNotesDraft();
+                }
+            } else {
+                showStatus('Ошибка сохранения', false);
+                resetStatus();
+            }
+        } catch (error) {
+            console.error('Ошибка автосохранения:', error);
+            showStatus('Ошибка сохранения', false);
+            resetStatus();
+        } finally {
+            isSaving = false;
+        }
+    }
+    
+    // Throttling для разных типов полей
+    let notesThrottleTimeout = null;
+    let isNotesInput = false;
+    
+    // Автосохранение при изменении полей
+    function scheduleAutoSave(isNotes = false) {
+        // Не сохраняем, если идет загрузка данных
+        if (isLoadingData || isSaving) return;
+        
+        // Для заметок используем более длинный throttle
+        if (isNotes) {
+            isNotesInput = true;
+            clearTimeout(notesThrottleTimeout);
+            notesThrottleTimeout = setTimeout(() => {
+                isNotesInput = false;
+                clearTimeout(autosaveTimeout);
+                autosaveTimeout = setTimeout(performAutoSave, 2000);
+            }, 4000); // Для заметок ждем 4 секунды после последнего ввода
+            return;
+        }
+        
+        clearTimeout(autosaveTimeout);
+        // Для остальных полей - 3 секунды
+        autosaveTimeout = setTimeout(performAutoSave, 3000);
+    }
+    
+    // Сбрасываем хэш при смене даты
+    const originalLoadEntryForDate = window.loadEntryForDate;
+    if (originalLoadEntryForDate) {
+        window.loadEntryForDate = async function(dateStr) {
+            lastSavedDataHash = null; // Сбрасываем хэш при смене даты
+            clearTimeout(autosaveTimeout); // Отменяем запланированное автосохранение
+            clearTimeout(notesThrottleTimeout); // Отменяем throttle для заметок
+            isNotesInput = false;
+            await originalLoadEntryForDate(dateStr);
+        };
+    }
+    
+    // Используем делегирование событий для лучшей производительности
+    // Один обработчик на всю форму вместо множества отдельных
+    
+    form.addEventListener('click', (e) => {
+        // Состояния
+        if (e.target.classList.contains('state-btn')) {
+            scheduleAutoSave();
+        }
+        // Бинарные кнопки
+        else if (e.target.hasAttribute('data-binary')) {
+            scheduleAutoSave();
+        }
+        // Пользовательские состояния (кнопки)
+        else if (e.target.classList.contains('custom-binary-btn') || 
+                 e.target.classList.contains('custom-cat-btn') ||
+                 e.target.closest('[data-custom-binary]') ||
+                 e.target.closest('.custom-cat-btn')) {
+            scheduleAutoSave();
+        }
+    });
+    
+    form.addEventListener('change', (e) => {
+        const target = e.target;
+        // Качество сна
+        if (target.name === 'sleep_quality') {
+            scheduleAutoSave();
+        }
+        // Лекарства
+        else if (target.name && target.name.startsWith('medication_check_')) {
+            scheduleAutoSave();
+        }
+        // Пользовательские состояния (чекбоксы)
+        else if (target.name && target.name.startsWith('custom_state_')) {
+            scheduleAutoSave();
+        }
+    });
+    
+    form.addEventListener('input', (e) => {
+        const target = e.target;
+        // Ползунок сна
+        if (target.name === 'sleep_hours') {
+            scheduleAutoSave(false);
+        }
+        // Заметки - используем специальный throttle
+        else if (target.name === 'notes') {
+            scheduleAutoSave(true);
+        }
+        // Числовые ползунки пользовательских состояний
+        else if (target.id && target.id.startsWith('custom_state_num_')) {
+            scheduleAutoSave(false);
+        }
+    });
+}
+
+/**
+ * Определение типа дня
+ */
+async function determineDayType() {
+    const btn = document.getElementById('determine-day-type-btn');
+    if (!btn) return;
+    
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Определение...';
+    
+    try {
+        // Сохраняем запись, чтобы получить тип дня
+        const result = await saveEntry(false);
+        
+        if (result && result.success) {
+            StabilUtils.showMessage('Тип дня определен', 'success');
+        } else {
+            StabilUtils.showMessage(result?.error || 'Ошибка при определении типа дня', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка определения типа дня:', error);
+        StabilUtils.showMessage('Ошибка при определении типа дня', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
 // Горячие клавиши для модалок
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -1653,6 +2351,9 @@ document.addEventListener('keydown', function(e) {
         }
         if (!document.getElementById('addCustomStateModal').classList.contains('hidden')) {
             closeAddCustomStateModal();
+        }
+        if (!document.getElementById('notes-fullscreen-modal').classList.contains('hidden')) {
+            document.getElementById('notes-fullscreen-modal').classList.add('hidden');
         }
     }
 });

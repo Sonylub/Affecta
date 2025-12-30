@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Градиенты для элементов -->
+    <radialGradient id="orangeGradientFav" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8C42;stop-opacity:1" />
+    </radialGradient>
+    <linearGradient id="purpleGradientFav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E879F9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C77DFF;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="tealGradientFav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34E0E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#22D3EE;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="blueGradientFav" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7DD3FC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#60A5FA;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Центральная сфера (ядро/баланс) - более крупная и заметная -->
+  <circle cx="32" cy="32" r="12" fill="url(#orangeGradientFav)"/>
+  <circle cx="29" cy="29" r="4" fill="white" opacity="0.9"/>
+  
+  <!-- Верхний элемент (маниакальная фаза - взлет вверх) - упрощенный -->
+  <ellipse cx="32" cy="16" rx="8" ry="6" fill="url(#purpleGradientFav)"/>
+  
+  <!-- Нижний элемент (депрессивная фаза - падение вниз) - упрощенный -->
+  <ellipse cx="32" cy="48" rx="8" ry="6" fill="url(#tealGradientFav)"/>
+  
+  <!-- Боковые элементы для симметрии -->
+  <ellipse cx="16" cy="32" rx="6" ry="8" fill="url(#blueGradientFav)"/>
+  <ellipse cx="48" cy="32" rx="6" ry="8" fill="url(#blueGradientFav)"/>
+</svg>
+

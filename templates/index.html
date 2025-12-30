@@ -7,7 +7,10 @@
     <!-- Герой секция -->
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg shadow-lg text-white py-16 px-6 mb-12">
         <h1 class="text-4xl md:text-6xl font-bold mb-4">
-            <img src="{{ url_for('static', filename='images/affecta-logo.svg') }}" alt="Affecta" class="h-12 w-auto mx-auto mb-4">
+            <!-- Логотип для светлой темы -->
+            <img src="{{ url_for('static', filename='images/affecta-logo.svg') }}" alt="Affecta" class="h-12 w-auto mx-auto mb-4 block dark:hidden">
+            <!-- Логотип для темной темы -->
+            <img src="{{ url_for('static', filename='images/affecta-logo-dark.svg') }}" alt="Affecta" class="h-12 w-auto mx-auto mb-4 hidden dark:block">
         </h1>
         <p class="text-xl md:text-2xl mb-8 opacity-90">
             Ваш персональный биполярный трекер

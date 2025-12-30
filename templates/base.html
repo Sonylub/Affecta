@@ -55,17 +55,34 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     <!-- Favicon -->
-    <link rel="icon" href="{{ url_for('static', filename='images/affecta-logo.svg') }}" type="image/svg+xml">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Affecta">
+    <meta name="description" content="Персональный трекер для отслеживания биполярного аффективного расстройства">
+    
+    <!-- iOS Splash Screens -->
+    <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='images/favicon.svg') }}">
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
     <!-- Навигация -->
-    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 md:fixed md:top-0 md:left-0 md:right-0 md:z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center">
                         <a href="{{ url_for('main.index') }}" class="cursor-pointer">
-                            <img src="{{ url_for('static', filename='images/affecta-logo.svg') }}" alt="Affecta" class="h-10 w-auto">
+                            <!-- Логотип для светлой темы -->
+                            <img src="{{ url_for('static', filename='images/affecta-logo.svg') }}" alt="Affecta" class="h-10 w-auto block dark:hidden">
+                            <!-- Логотип для темной темы -->
+                            <img src="{{ url_for('static', filename='images/affecta-logo-dark.svg') }}" alt="Affecta" class="h-10 w-auto hidden dark:block">
                         </a>
                     </div>
                     {% if current_user.is_authenticated %}
@@ -152,7 +169,7 @@
     {% endwith %}
 
     <!-- Основной контент -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 md:pt-24">
         {% block content %}{% endblock %}
     </main>
 
@@ -197,6 +214,7 @@
     <!-- JavaScript -->
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pwa.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
