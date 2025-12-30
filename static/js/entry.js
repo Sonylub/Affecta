@@ -252,6 +252,9 @@ function updateDateNavigationButtons() {
 /**
  * Инициализация кнопок состояний
  */
+// Классы для активного состояния кнопок (светлая и тёмная тема)
+const ACTIVE_CLASSES = ['active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'dark:border-indigo-400', 'text-indigo-700', 'dark:text-indigo-200'];
+
 function initializeStateButtons() {
     document.querySelectorAll('[data-state-group]').forEach(group => {
         const stateGroup = group.getAttribute('data-state-group');
@@ -266,12 +269,12 @@ function initializeStateButtons() {
 
                 // Если уже выбрана — снимаем выбор (toggle off)
                 if (isAlreadyActive) {
-                    buttons.forEach(b => b.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700'));
+                    buttons.forEach(b => b.classList.remove(...ACTIVE_CLASSES));
                     if (hiddenInput) hiddenInput.value = '';
                 } else {
                     // Иначе выбираем как обычно
-                    buttons.forEach(b => b.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700'));
-                    btn.classList.add('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+                    buttons.forEach(b => b.classList.remove(...ACTIVE_CLASSES));
+                    btn.classList.add(...ACTIVE_CLASSES);
                     if (hiddenInput) hiddenInput.value = value;
                 }
 
@@ -297,12 +300,12 @@ function initializeBinaryButtons() {
 
             // Если уже выбрана — снимаем выбор
             if (isAlreadyActive) {
-                group.forEach(b => b.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700'));
+                group.forEach(b => b.classList.remove(...ACTIVE_CLASSES));
                 if (hiddenInput) hiddenInput.value = '';
             } else {
                 // Иначе выбираем как обычно
-                group.forEach(b => b.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700'));
-                btn.classList.add('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+                group.forEach(b => b.classList.remove(...ACTIVE_CLASSES));
+                btn.classList.add(...ACTIVE_CLASSES);
                 if (hiddenInput) hiddenInput.value = value;
             }
         });
@@ -372,9 +375,9 @@ function setStateGroup(stateGroup, value) {
     buttons.forEach(btn => {
         const btnValue = btn.getAttribute('data-value');
         if (btnValue === value) {
-            btn.classList.add('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.add(...ACTIVE_CLASSES);
         } else {
-            btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.remove(...ACTIVE_CLASSES);
         }
     });
     
@@ -391,7 +394,7 @@ function clearStateGroup(stateGroup) {
     const hiddenInput = document.querySelector(`input[name="${stateGroup}"]`);
 
     buttons.forEach(btn => {
-        btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+        btn.classList.remove(...ACTIVE_CLASSES);
     });
 
     if (hiddenInput) {
@@ -412,9 +415,9 @@ function setBinaryValue(field, value) {
     buttons.forEach(btn => {
         const btnValue = btn.getAttribute('data-value');
         if (btnValue === value) {
-            btn.classList.add('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.add(...ACTIVE_CLASSES);
         } else {
-            btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.remove(...ACTIVE_CLASSES);
         }
     });
     
@@ -428,7 +431,7 @@ function clearBinaryValue(field) {
     const hiddenInput = document.querySelector(`input[name="${field}"]`);
 
     buttons.forEach(btn => {
-        btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+        btn.classList.remove(...ACTIVE_CLASSES);
     });
 
     if (hiddenInput) {
@@ -739,12 +742,12 @@ async function loadEntryForDate(dateStr) {
     try {
         // Снимаем выделение со всех кнопок состояний
         document.querySelectorAll('.state-btn').forEach(btn => {
-            btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.remove(...ACTIVE_CLASSES);
         });
 
         // Снимаем выделение со всех бинарных кнопок
         document.querySelectorAll('[data-binary]').forEach(btn => {
-            btn.classList.remove('active', 'bg-indigo-50', 'border-indigo-500', 'text-indigo-700');
+            btn.classList.remove(...ACTIVE_CLASSES);
         });
 
         // Прячем блок "Тип дня" и очищаем текст
@@ -1014,7 +1017,7 @@ function resetCustomStatesSelection() {
                 const binaryGroup = document.querySelectorAll(`[data-custom-binary="${state.id}"]`);
                 const binaryHiddenInput = document.getElementById(`custom_state_binary_input_${state.id}`);
                 binaryGroup.forEach(btn => {
-                    btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+                    btn.classList.remove(...ACTIVE_CLASSES);
                 });
                 if (binaryHiddenInput) binaryHiddenInput.value = '';
                 break;
@@ -1024,7 +1027,7 @@ function resetCustomStatesSelection() {
                 const catHiddenInput = document.getElementById(`custom_state_cat_input_${state.id}`);
                 if (catGroup) {
                     catGroup.querySelectorAll('.custom-cat-btn').forEach(btn => {
-                        btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+                        btn.classList.remove(...ACTIVE_CLASSES);
                     });
                 }
                 if (catHiddenInput) catHiddenInput.value = '';
@@ -1321,7 +1324,7 @@ function setCustomStateBinary(stateId, value) {
     // Если value пустой, убираем все активные состояния
     if (!value || value === '') {
         group.forEach(btn => {
-            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+            btn.classList.remove(...ACTIVE_CLASSES);
         });
         if (hiddenInput) {
             hiddenInput.value = '';
@@ -1332,9 +1335,9 @@ function setCustomStateBinary(stateId, value) {
     group.forEach(btn => {
         const btnValue = btn.getAttribute('data-value');
         if (btnValue === value) {
-            btn.classList.add('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+            btn.classList.add(...ACTIVE_CLASSES);
         } else {
-            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+            btn.classList.remove(...ACTIVE_CLASSES);
         }
     });
     
@@ -1353,7 +1356,7 @@ function setCustomStateCategorical(stateId, value) {
     // Если value пустой, убираем все активные состояния
     if (!value || value === '') {
         buttons.forEach(btn => {
-            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+            btn.classList.remove(...ACTIVE_CLASSES);
         });
         if (hiddenInput) {
             hiddenInput.value = '';
@@ -1364,9 +1367,9 @@ function setCustomStateCategorical(stateId, value) {
     buttons.forEach(btn => {
         const btnValue = btn.getAttribute('data-value');
         if (btnValue === value) {
-            btn.classList.add('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+            btn.classList.add(...ACTIVE_CLASSES);
         } else {
-            btn.classList.remove('active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'text-indigo-700', 'dark:text-indigo-200');
+            btn.classList.remove(...ACTIVE_CLASSES);
         }
     });
     

@@ -4,7 +4,7 @@
  */
 
 // Версия кэша - ОБЯЗАТЕЛЬНО обновлять при изменениях в JS/CSS файлах!
-const CACHE_VERSION = '1.1.0';
+const CACHE_VERSION = '1.2.0';
 const CACHE_NAME = `affecta-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `affecta-runtime-v${CACHE_VERSION}`;
 
