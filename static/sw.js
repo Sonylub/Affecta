@@ -50,16 +50,30 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
-                    // Удаляем все кэши, которые не соответствуют текущей версии
-                    if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
+                    // Удаляем ВСЕ старые кэши Affecta (любой версии, кроме текущей)
+                    // Это гарантирует, что старые версии не будут мешать
+                    if (cacheName.startsWith('affecta-') && cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
                         console.log('[SW] Удаление старого кэша:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                    // Также удаляем кэши, которые не относятся к Affecta (на всякий случай)
+                    if (!cacheName.startsWith('affecta-')) {
+                        console.log('[SW] Удаление постороннего кэша:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
             console.log('[SW] Service Worker активирован, контроль страниц получен');
+            // Принудительно обновляем все открытые вкладки
             return self.clients.claim();
+        }).then(() => {
+            // Отправляем сообщение всем клиентам о необходимости перезагрузки
+            return self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
+                });
+            });
         })
     );
 });

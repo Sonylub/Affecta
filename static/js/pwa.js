@@ -44,6 +44,17 @@
             console.log('Service Worker обновлён, перезагрузка страницы');
             window.location.reload();
         });
+
+        // Обработка сообщений от Service Worker
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                console.log('Service Worker обновлён до версии', event.data.version);
+                // Перезагружаем страницу через небольшую задержку, чтобы пользователь увидел сообщение
+                setTimeout(() => {
+                    window.location.reload(true); // Принудительная перезагрузка с очисткой кеша
+                }, 1000);
+            }
+        });
     });
 
     // Показ уведомления об обновлении
