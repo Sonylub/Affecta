@@ -26,6 +26,25 @@ const FREQUENCY_LABELS = {
     as_needed: 'По необходимости'
 };
 
+// Утилиты для корректной работы с локальными датами (без сдвигов по часовым поясам)
+function parseLocalDateString(dateStr) {
+    try {
+        const parts = (dateStr || '').split('-').map(Number);
+        if (parts.length !== 3) return new Date(NaN);
+        const [y, m, d] = parts;
+        return new Date(y, m - 1, d);
+    } catch (e) {
+        return new Date(NaN);
+    }
+}
+
+function formatLocalDate(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeEntryPage();
 });
@@ -144,9 +163,9 @@ function initializeDateNavigation() {
     // Навигация стрелками
     if (datePrevBtn) {
         datePrevBtn.addEventListener('click', () => {
-            const date = new Date(selectedDate);
+            const date = parseLocalDateString(selectedDate);
             date.setDate(date.getDate() - 1);
-            selectedDate = date.toISOString().split('T')[0];
+            selectedDate = formatLocalDate(date);
             if (dateInput) dateInput.value = selectedDate;
             updateDateDisplay();
             updateDateNavigationButtons();
@@ -156,13 +175,13 @@ function initializeDateNavigation() {
     
     if (dateNextBtn) {
         dateNextBtn.addEventListener('click', () => {
-            const date = new Date(selectedDate);
+            const date = parseLocalDateString(selectedDate);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             
             if (date < today) {
                 date.setDate(date.getDate() + 1);
-                selectedDate = date.toISOString().split('T')[0];
+                selectedDate = formatLocalDate(date);
                 if (dateInput) dateInput.value = selectedDate;
                 updateDateDisplay();
                 updateDateNavigationButtons();
@@ -181,7 +200,7 @@ function updateDateDisplay() {
     const dateDisplay = document.getElementById('date-display');
     if (!dateDisplay) return;
     
-    const date = new Date(selectedDate);
+    const date = parseLocalDateString(selectedDate);
     date.setHours(0, 0, 0, 0);
     const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
     const today = new Date();
@@ -221,7 +240,9 @@ function updateDateNavigationButtons() {
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const isToday = new Date(selectedDate) >= today;
+    const sel = parseLocalDateString(selectedDate);
+    sel.setHours(0, 0, 0, 0);
+    const isToday = sel >= today;
     
     dateNextBtn.disabled = isToday;
     dateNextBtn.classList.toggle('opacity-30', isToday);
@@ -417,6 +438,13 @@ function clearBinaryValue(field) {
 
 // Логика типа дня теперь считается на сервере и отображается по данным записи
 let currentDayTypeExplanation = null;
+
+// Поддержка старых вызовов: ранее тип дня считался на клиенте.
+// Сейчас расчёт выполняется на сервере, поэтому оставляем заглушку,
+// чтобы не падать с ошибкой ReferenceError.
+function updateDayTypeDisplay() {
+    return;
+}
 
 function updateDayTypeUI(dt, explanation = null) {
     const dayTypeSection = document.getElementById('day-type-section');
@@ -643,6 +671,7 @@ async function saveDayType() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 date: selectedDate,
                 day_type: selectedType
@@ -744,7 +773,7 @@ async function loadEntryForDate(dateStr) {
     }
 
     try {
-        const response = await fetch(`/get_entry/${dateStr}`);
+        const response = await fetch(`/get_entry/${dateStr}`, { credentials: 'include' });
         if (!response.ok) return;
 
         const data = await response.json();
@@ -1494,6 +1523,7 @@ async function saveEntry(showMessage = true) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         });
         
@@ -1592,6 +1622,7 @@ async function saveMedication() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify(body)
         });
         
@@ -1660,6 +1691,7 @@ async function deleteMedication(medId) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ med_id: medId })
         });
 
@@ -1780,6 +1812,7 @@ async function saveCustomState() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify(body)
         });
         
@@ -1862,6 +1895,7 @@ async function deleteCustomState(stateId) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ state_id: stateId })
         });
 
@@ -2190,6 +2224,7 @@ function initializeAutoSave() {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
             
