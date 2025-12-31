@@ -5,8 +5,17 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Заголовок и навигация по датам -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 transition-colors">
-        <div class="mb-3 md:mb-4">
+    <div class="bg-white dark:bg-gray-800 shadow-sm p-4 md:p-6 transition-colors fixed top-0 left-0 right-0 z-50 md:static md:rounded-lg md:shadow-sm">
+        <!-- Логотип на мобильных -->
+        <div class="mb-3 md:hidden flex items-center justify-start">
+            <a href="{{ url_for('main.index') }}" class="cursor-pointer">
+                <!-- Логотип для светлой темы -->
+                <img src="{{ url_for('static', filename='images/affecta-logo.svg') }}" alt="Affecta" class="h-8 w-auto block dark:hidden">
+                <!-- Логотип для темной темы -->
+                <img src="{{ url_for('static', filename='images/affecta-logo-dark.svg') }}" alt="Affecta" class="h-8 w-auto hidden dark:block">
+            </a>
+        </div>
+        <div class="mb-3 md:mb-4 hidden md:block">
             <h1 class="text-xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">Дневная запись</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1 md:mt-2 text-sm md:text-base hidden md:block">
                 Выберите дату, чтобы просмотреть или изменить запись за этот день.
@@ -58,7 +67,7 @@
     </div>
 
     <!-- Форма записи -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 transition-colors">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 transition-colors mt-28 md:mt-0">
         <form id="entryForm" class="space-y-4 md:space-y-6">
             <!-- Состояния сегодня -->
             <div>
@@ -68,11 +77,11 @@
                     <!-- Депрессивное состояние -->
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Депрессивное состояние</p>
-                        <div class="grid grid-cols-4 gap-2" data-state-group="depressive_state">
-                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Лёгкое</button>
-                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Умеренное</button>
-                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Тяжёлое</button>
+                        <div data-state-group="depressive_state">
+                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">НЕТ</button>
+                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ЛЕГКОЕ</button>
+                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">УМЕРЕННОЕ</button>
+                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ТЯЖЕЛОЕ</button>
                         </div>
                         <input type="hidden" name="depressive_state" value="">
                     </div>
@@ -80,11 +89,11 @@
                     <!-- Маниакальное состояние -->
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Маниакальное состояние / гипомания</p>
-                        <div class="grid grid-cols-4 gap-2" data-state-group="manic_state">
-                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Лёгкое</button>
-                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Умеренное</button>
-                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Тяжёлое</button>
+                        <div data-state-group="manic_state">
+                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">НЕТ</button>
+                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ЛЕГКОЕ</button>
+                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">УМЕРЕННОЕ</button>
+                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ТЯЖЕЛОЕ</button>
                         </div>
                         <input type="hidden" name="manic_state" value="">
                     </div>
@@ -92,11 +101,11 @@
                     <!-- Раздражительность -->
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Раздражительность</p>
-                        <div class="grid grid-cols-4 gap-2" data-state-group="irritable_state">
-                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Лёгкая</button>
-                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Умеренная</button>
-                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Сильная</button>
+                        <div data-state-group="irritable_state">
+                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">НЕТ</button>
+                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ЛЕГКОЕ</button>
+                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">УМЕРЕННОЕ</button>
+                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ТЯЖЕЛОЕ</button>
                         </div>
                         <input type="hidden" name="irritable_state" value="">
                     </div>
@@ -104,11 +113,11 @@
                     <!-- Тревога -->
                     <div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Тревога</p>
-                        <div class="grid grid-cols-4 gap-2" data-state-group="anxious_state">
-                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Лёгкая</button>
-                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Умеренная</button>
-                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Сильная</button>
+                        <div data-state-group="anxious_state">
+                            <button type="button" data-value="none" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">НЕТ</button>
+                            <button type="button" data-value="mild" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ЛЕГКОЕ</button>
+                            <button type="button" data-value="moderate" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">УМЕРЕННОЕ</button>
+                            <button type="button" data-value="severe" class="state-btn px-2 md:px-3 py-2 text-xs md:text-sm rounded-md">ТЯЖЕЛОЕ</button>
                         </div>
                         <input type="hidden" name="anxious_state" value="">
                     </div>
@@ -117,17 +126,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                         <div>
                             <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Психотические симптомы</p>
-                            <div class="flex gap-2">
-                                <button type="button" data-binary="psychotic_symptoms" data-value="no" class="binary-btn px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                                <button type="button" data-binary="psychotic_symptoms" data-value="yes" class="binary-btn px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Да</button>
+                            <div class="binary-btn-group">
+                                <button type="button" data-binary="psychotic_symptoms" data-value="no" class="binary-btn px-4 py-2 text-sm">НЕТ</button>
+                                <button type="button" data-binary="psychotic_symptoms" data-value="yes" class="binary-btn px-4 py-2 text-sm">ДА</button>
                             </div>
                             <input type="hidden" name="psychotic_symptoms" value="">
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Психотерапия сегодня</p>
-                            <div class="flex gap-2">
-                                <button type="button" data-binary="psychotherapy" data-value="no" class="binary-btn px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                                <button type="button" data-binary="psychotherapy" data-value="yes" class="binary-btn px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Да</button>
+                            <div class="binary-btn-group">
+                                <button type="button" data-binary="psychotherapy" data-value="no" class="binary-btn px-4 py-2 text-sm">НЕТ</button>
+                                <button type="button" data-binary="psychotherapy" data-value="yes" class="binary-btn px-4 py-2 text-sm">ДА</button>
                             </div>
                             <input type="hidden" name="psychotherapy" value="">
                         </div>
@@ -137,14 +146,17 @@
             
             <!-- Пользовательские состояния -->
             <div class="border-t border-gray-200 dark:border-gray-700 pt-4 md:pt-6" id="custom-states-section">
-                <div class="flex items-center justify-between mb-3 md:mb-4">
-                    <h2 class="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100">Дополнительные состояния</h2>
-                    <button type="button" onclick="addCustomState()" class="text-xs md:text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium px-2 py-1">
-                        + Добавить
-                    </button>
-                </div>
+                <h2 class="text-base md:text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 md:mb-4">Дополнительные состояния</h2>
                 <div id="custom-states-list" class="space-y-3 md:space-y-4">
                     <!-- Заполняется JavaScript -->
+                </div>
+                <div class="flex gap-4 mt-4">
+                    <a href="{{ url_for('main.edit_medications') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm font-medium transition-colors">
+                        Редактировать
+                    </a>
+                    <button type="button" onclick="addCustomState()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm font-medium transition-colors">
+                        + Добавить
+                    </button>
                 </div>
             </div>
             
@@ -210,9 +222,14 @@
                 <div id="medications-list">
                     <!-- Заполняется JavaScript -->
                 </div>
-                <button type="button" onclick="addMedication()" class="mt-3 text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm font-medium">
-                    + Добавить лекарство
-                </button>
+                <div class="flex gap-4 mt-4">
+                    <a href="{{ url_for('main.edit_medications') }}" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm font-medium transition-colors">
+                        Редактировать
+                    </a>
+                    <button type="button" onclick="addMedication()" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm font-medium transition-colors">
+                        + Добавить
+                    </button>
+                </div>
             </div>
             
             <!-- Тип дня -->
@@ -380,6 +397,33 @@
                 </div>
             </div>
         </form>
+    </div>
+
+    <!-- Модальное окно для изменения дозировки лекарства на сегодня -->
+    <div id="editMedicationDoseModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-70 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Изменить сегодняшнюю дозу лекарства</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дозировка (мг)</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="edit-medication-dose" placeholder="Например: 25" min="0" step="0.1" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">мг</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Эта доза лекарства может быть изменена для всех дней или удалена на экране редактора лекарств.
+                        </p>
+                    </div>
+                    <div class="flex justify-end space-x-3 mt-6">
+                        <button onclick="closeEditMedicationDoseModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">ОТМЕНА</button>
+                        <button id="save-medication-dose-btn" onclick="saveMedicationDose()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">СОХРАНИТЬ</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Модальное окно для добавления лекарства -->

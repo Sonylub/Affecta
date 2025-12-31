@@ -352,6 +352,12 @@ input[type="radio"]:hover {
 
 /* Стили для мобильных устройств */
 @media (max-width: 768px) {
+    /* Закрепленный слайдер дат на мобильных */
+    .fixed.top-0 {
+        border-radius: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
     .modal-content {
         margin: 1rem;
         max-height: calc(100vh - 2rem);
@@ -365,16 +371,54 @@ input[type="radio"]:hover {
         grid-template-columns: repeat(2, 1fr);
     }
     
-    /* Мобильная адаптация для кнопок состояний */
+    /* Мобильная адаптация для кнопок состояний (стиль eMoods - единый блок) */
     .state-btn,
     .binary-btn,
     .custom-binary-btn,
     .custom-cat-btn,
     .day-type-btn {
         min-height: 44px; /* Минимальная высота для удобного нажатия */
-        min-width: 44px;
         padding: 0.625rem 0.75rem;
         font-size: 0.875rem;
+        /* Сохраняем стиль eMoods на мобильных - единый блок */
+        background-color: #374151;
+        border: none;
+        border-right: 1px solid #4B5563;
+        border-radius: 0;
+        color: #FFFFFF;
+        text-transform: uppercase;
+    }
+    
+    [data-state-group] .state-btn:last-child,
+    .binary-btn:last-of-type,
+    [data-custom-binary] .custom-binary-btn:last-child,
+    [data-custom-cat] .custom-cat-btn:last-child {
+        border-right: none;
+    }
+    
+    [data-state-group] .state-btn:first-child,
+    .binary-btn:first-of-type,
+    [data-custom-binary] .custom-binary-btn:first-child,
+    [data-custom-cat] .custom-cat-btn:first-child {
+        border-top-left-radius: 0.375rem;
+        border-bottom-left-radius: 0.375rem;
+    }
+    
+    [data-state-group] .state-btn:last-child,
+    .binary-btn:last-of-type,
+    [data-custom-binary] .custom-binary-btn:last-child,
+    [data-custom-cat] .custom-cat-btn:last-child {
+        border-top-right-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+    }
+    
+    .state-btn.active,
+    .binary-btn.active,
+    .custom-binary-btn.active,
+    .custom-cat-btn.active,
+    .day-type-btn.active {
+        background-color: #7C3AED;
+        color: #FFFFFF;
     }
     
     /* Мобильная адаптация для ползунков */
@@ -501,25 +545,114 @@ input[type="radio"]:hover {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
-/* Стили для активных состояний кнопок */
-.state-btn.active,
-.binary-btn.active,
-.custom-binary-btn.active,
-.custom-cat-btn.active,
-.day-type-btn.active {
-    background-color: #EEF2FF;
-    border-color: #6366F1;
-    color: #4338CA;
-    font-weight: 500;
-}
-
-/* Обеспечение читаемости текста во всех элементах */
+/* Стили для кнопок в стиле eMoods - единый блок с разделителями */
 .state-btn,
 .binary-btn,
 .custom-binary-btn,
 .custom-cat-btn,
 .day-type-btn {
-    color: #374151;
+    background-color: #374151;
+    color: #FFFFFF;
+    font-weight: 500;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+    border: none;
+    border-right: 1px solid #4B5563;
+    border-radius: 0;
+    outline: none;
+}
+
+/* Убираем рамки у кнопок редактирования и добавления */
+#medications-section .flex.gap-2 button,
+#medications-section .flex.gap-2 a,
+#custom-states-section .flex.gap-2 button,
+#custom-states-section .flex.gap-2 a {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Убираем разделитель у последней кнопки в группе */
+[data-state-group] .state-btn:last-child,
+.binary-btn:last-of-type,
+[data-custom-binary] .custom-binary-btn:last-child,
+[data-custom-cat] .custom-cat-btn:last-child {
+    border-right: none;
+}
+
+/* Первая кнопка - скругление слева */
+[data-state-group] .state-btn:first-child,
+.binary-btn:first-of-type,
+[data-custom-binary] .custom-binary-btn:first-child,
+[data-custom-cat] .custom-cat-btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+/* Последняя кнопка - скругление справа */
+[data-state-group] .state-btn:last-child,
+.binary-btn:last-of-type,
+[data-custom-binary] .custom-binary-btn:last-child,
+[data-custom-cat] .custom-cat-btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+/* Внешние границы для всего блока */
+[data-state-group],
+[data-custom-cat] {
+    border: 1px solid #4B5563;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+/* Для бинарных кнопок - компактные, не растягиваются */
+.binary-btn-group,
+[data-custom-binary] {
+    border: 1px solid #4B5563;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    display: inline-flex;
+    width: auto;
+}
+
+/* Бинарные кнопки не должны растягиваться */
+.binary-btn-group .binary-btn,
+[data-custom-binary] .custom-binary-btn {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+/* Для grid контейнеров */
+[data-state-group] {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+}
+
+[data-custom-cat] {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+}
+
+/* Мобильная адаптация для кастомных категориальных состояний */
+@media (max-width: 768px) {
+    [data-custom-cat] {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    [data-custom-cat] .custom-cat-btn {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 640px) {
+    [data-custom-cat] .custom-cat-btn {
+        padding: 0.5rem 0.125rem;
+        font-size: 0.7rem;
+    }
 }
 
 .state-btn:hover,
@@ -527,8 +660,18 @@ input[type="radio"]:hover {
 .custom-binary-btn:hover,
 .custom-cat-btn:hover,
 .day-type-btn:hover {
-    background-color: #F1F5F9;
-    color: #1F2937;
+    background-color: #4B5563;
+}
+
+/* Стили для активных состояний кнопок (выбранные) */
+.state-btn.active,
+.binary-btn.active,
+.custom-binary-btn.active,
+.custom-cat-btn.active,
+.day-type-btn.active {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+    font-weight: 600;
 }
 
 /* Убираем скрытые маркеры и иконки из чекбоксов в пользовательских состояниях */
@@ -763,27 +906,59 @@ input[type="radio"]:hover {
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 
-/* Стили для активных состояний кнопок - темная тема */
-.dark .state-btn.active,
-.dark .binary-btn.active,
-.dark .custom-binary-btn.active,
-.dark .custom-cat-btn.active,
-.dark .day-type-btn.active {
-    background-color: #4338CA;
-    border-color: #6366F1;
-    color: #E0E7FF;
-    font-weight: 500;
-}
-
-/* Обеспечение читаемости текста во всех элементах - темная тема */
+/* Стили для кнопок в темной теме (стиль eMoods - единый блок) */
 .dark .state-btn,
 .dark .binary-btn,
 .dark .custom-binary-btn,
 .dark .custom-cat-btn,
 .dark .day-type-btn {
-    color: #E5E7EB;
     background-color: #374151;
-    border-color: #4B5563;
+    color: #FFFFFF;
+    border: none;
+    border-right: 1px solid #4B5563;
+    border-radius: 0;
+}
+
+.dark [data-state-group] .state-btn:last-child,
+.dark .binary-btn:last-of-type,
+.dark [data-custom-binary] .custom-binary-btn:last-child,
+.dark [data-custom-cat] .custom-cat-btn:last-child {
+    border-right: none;
+}
+
+.dark [data-state-group] .state-btn:first-child,
+.dark .binary-btn:first-of-type,
+.dark [data-custom-binary] .custom-binary-btn:first-child,
+.dark [data-custom-cat] .custom-cat-btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.dark [data-state-group] .state-btn:last-child,
+.dark .binary-btn:last-of-type,
+.dark [data-custom-binary] .custom-binary-btn:last-child,
+.dark [data-custom-cat] .custom-cat-btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
+}
+
+.dark [data-state-group],
+.dark [data-custom-cat] {
+    border: 1px solid #4B5563;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.dark .binary-btn-group,
+.dark [data-custom-binary] {
+    display: inline-flex;
+    width: auto;
+}
+
+.dark .binary-btn-group .binary-btn,
+.dark [data-custom-binary] .custom-binary-btn {
+    flex: 0 0 auto;
+    width: auto;
 }
 
 .dark .state-btn:hover,
@@ -792,8 +967,17 @@ input[type="radio"]:hover {
 .dark .custom-cat-btn:hover,
 .dark .day-type-btn:hover {
     background-color: #4B5563;
-    color: #F9FAFB;
-    border-color: #6B7280;
+}
+
+/* Стили для активных состояний кнопок - темная тема (выбранные) */
+.dark .state-btn.active,
+.dark .binary-btn.active,
+.dark .custom-binary-btn.active,
+.dark .custom-cat-btn.active,
+.dark .day-type-btn.active {
+    background-color: #7C3AED;
+    color: #FFFFFF;
+    font-weight: 600;
 }
 
 /* Пользовательские состояния - темная тема */

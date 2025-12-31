@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование лекарств и состояний - Affecta{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Заголовок -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 transition-colors">
+        <h1 class="text-xl md:text-3xl font-bold text-gray-800 dark:text-gray-100">Редактирование лекарств и состояний</h1>
+    </div>
+
+    <!-- Лекарства -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 transition-colors">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100">Лекарства</h2>
+            <button type="button" onclick="addMedication()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors">
+                + Добавить лекарство
+            </button>
+        </div>
+        
+        {% if medications %}
+        <div class="space-y-2">
+            {% for med in medications %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        {{ med.name }}{% if med.dosage_mg %}, {{ med.dosage_mg }} мг{% endif %}
+                        {% if med.time_of_day %}
+                            ({% if med.time_of_day == 'morning' %}Утро{% elif med.time_of_day == 'afternoon' %}День{% elif med.time_of_day == 'evening' %}Вечер{% elif med.time_of_day == 'night' %}Ночь{% endif %}{% if med.frequency == 'as_needed' %}, по надобности{% endif %})
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="editMedication({{ med.id }})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm flex items-center gap-1.5" title="Редактировать">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <span>Изменить</span>
+                    </button>
+                    <button type="button" onclick="deleteMedication({{ med.id }})" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-sm flex items-center gap-1.5" title="Удалить">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
+                        </svg>
+                        <span>Удалить</span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 dark:text-gray-400 text-sm">Нет добавленных лекарств</p>
+        {% endif %}
+    </div>
+
+    <!-- Пользовательские состояния -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6 transition-colors">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg md:text-xl font-semibold text-gray-800 dark:text-gray-100">Дополнительные состояния</h2>
+            <button type="button" onclick="addCustomState()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors">
+                + Добавить состояние
+            </button>
+        </div>
+        
+        {% if custom_states %}
+        <div class="space-y-4">
+            {% for state in custom_states %}
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                            {{ state.name }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {% if state.mark_type == 'binary' %}Да / Нет
+                            {% elif state.mark_type == 'categorical' %}Категориальный (нет — тяжёлое)
+                            {% elif state.mark_type == 'numeric' %}Числовая шкала (0-10)
+                            {% elif state.mark_type == 'multi_checkbox' %}Множественный выбор
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="editCustomState({{ state.id }})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm flex items-center gap-1.5" title="Редактировать">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            <span>Изменить</span>
+                        </button>
+                        <button type="button" onclick="deleteCustomState({{ state.id }})" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-sm flex items-center gap-1.5" title="Удалить">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
+                            </svg>
+                            <span>Удалить</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 dark:text-gray-400 text-sm">Нет добавленных состояний</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальные окна для лекарств и состояний -->
+<!-- Модальное окно для добавления/редактирования лекарства -->
+<div id="addMedicationModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-70 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors">
+            <div class="p-6">
+                <h3 id="medication-modal-title" class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Добавить лекарство</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название препарата</label>
+                        <input type="text" id="new-medication-name" placeholder="Название лекарства" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Дозировка (мг)</label>
+                        <input type="number" id="new-medication-dosage" placeholder="Например: 100" min="0" step="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Время приёма</label>
+                        <select id="new-medication-time" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="">Не указано</option>
+                            <option value="morning">Утро</option>
+                            <option value="afternoon">День</option>
+                            <option value="evening">Вечер</option>
+                            <option value="night">Ночь</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Частота приёма</label>
+                        <select id="new-medication-frequency" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="daily">Ежедневно</option>
+                            <option value="as_needed">По необходимости</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button onclick="closeAddMedicationModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Отмена</button>
+                    <button id="save-medication-btn" onclick="saveMedication()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для добавления/редактирования пользовательского состояния -->
+<div id="addCustomStateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 dark:bg-gray-900 dark:bg-opacity-70 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors">
+            <div class="p-6">
+                <h3 id="state-modal-title" class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Добавить состояние</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Название состояния</label>
+                        <input type="text" id="new-state-name" placeholder="Например: Вредные привычки" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Тип отметки</label>
+                        <select id="new-state-mark-type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <option value="binary">Да / Нет</option>
+                            <option value="categorical">Категориальный (нет — тяжёлое)</option>
+                            <option value="numeric">Числовая шкала (0-10)</option>
+                            <option value="multi_checkbox">Множественный выбор (чекбоксы)</option>
+                        </select>
+                    </div>
+                    <div id="new-state-options-wrapper" class="space-y-2 hidden">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Варианты чекбоксов</label>
+                        <div id="new-state-options-list" class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <input type="text" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 new-state-option-input" placeholder="Например: сигареты">
+                                <button type="button" onclick="removeNewStateOptionRow(this)" class="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Удалить</button>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addNewStateOptionRow()" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium">
+                            + Добавить вариант
+                        </button>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button onclick="closeAddCustomStateModal()" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">Отмена</button>
+                    <button id="save-state-btn" onclick="saveCustomState()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">Добавить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.medications = {{ medications|tojson }};
+    window.customStates = {{ custom_states|tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/entry.js') }}?v=1.3.0"></script>
+{% endblock %}
+

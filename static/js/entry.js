@@ -252,8 +252,8 @@ function updateDateNavigationButtons() {
 /**
  * Инициализация кнопок состояний
  */
-// Классы для активного состояния кнопок (светлая и тёмная тема)
-const ACTIVE_CLASSES = ['active', 'bg-indigo-50', 'dark:bg-indigo-900', 'border-indigo-500', 'dark:border-indigo-400', 'text-indigo-700', 'dark:text-indigo-200'];
+// Классы для активного состояния кнопок (стиль eMoods - все стили в CSS)
+const ACTIVE_CLASSES = ['active'];
 
 function initializeStateButtons() {
     document.querySelectorAll('[data-state-group]').forEach(group => {
@@ -1083,25 +1083,19 @@ function updateMedicationsList() {
         const infoText = infoParts.length > 0 ? ` (${infoParts.join(', ')})` : '';
         
         return `
-            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md mb-2 transition-colors">
-                <div class="flex items-center space-x-3 flex-1">
-                    <input type="checkbox" id="medication_check_${med.id}" name="medication_check_${med.id}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-md mb-2 transition-colors">
+                <div class="flex items-center space-x-3 mb-2">
+                    <input type="checkbox" id="medication_check_${med.id}" name="medication_check_${med.id}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded flex-shrink-0">
                     <label for="medication_check_${med.id}" class="text-sm font-medium text-gray-700 dark:text-gray-200 flex-1">
                         ${med.name}${infoText}
                     </label>
                 </div>
-                <div class="flex items-center gap-2 ml-2">
-                    <button type="button" onclick="editMedication(${med.id})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm flex items-center gap-1.5" title="Редактировать">
+                <div class="flex justify-end">
+                    <button type="button" onclick="editMedicationDose(${med.id}, ${med.dosage_mg || 0})" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 text-sm flex items-center gap-1.5" title="Изменить дозировку на сегодня">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
                         <span>Изменить</span>
-                    </button>
-                    <button type="button" onclick="deleteMedication(${med.id})" class="text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 text-sm flex items-center gap-1.5" title="Удалить">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
-                        </svg>
-                        <span>Удалить</span>
                     </button>
                 </div>
             </div>
@@ -1143,20 +1137,20 @@ function updateCustomStatesList() {
         switch (state.mark_type) {
             case 'binary':
                 inputHtml = `
-                    <div class="flex gap-2" id="custom_state_binary_${state.id}">
-                        <button type="button" data-custom-binary="${state.id}" data-value="no" class="custom-binary-btn px-5 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                        <button type="button" data-custom-binary="${state.id}" data-value="yes" class="custom-binary-btn px-5 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Да</button>
+                    <div id="custom_state_binary_${state.id}" data-custom-binary="${state.id}">
+                        <button type="button" data-custom-binary="${state.id}" data-value="no" class="custom-binary-btn px-5 py-2.5 text-base">НЕТ</button>
+                        <button type="button" data-custom-binary="${state.id}" data-value="yes" class="custom-binary-btn px-5 py-2.5 text-base">ДА</button>
                     </div>
                     <input type="hidden" id="custom_state_binary_input_${state.id}" name="custom_state_${state.id}" value="">
                 `;
                 break;
             case 'categorical':
                 inputHtml = `
-                    <div class="grid grid-cols-4 gap-2" id="custom_state_cat_${state.id}" data-custom-cat="${state.id}">
-                        <button type="button" data-value="none" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Нет</button>
-                        <button type="button" data-value="mild" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Лёгкое</button>
-                        <button type="button" data-value="moderate" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Умеренное</button>
-                        <button type="button" data-value="severe" class="custom-cat-btn px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Тяжёлое</button>
+                    <div id="custom_state_cat_${state.id}" data-custom-cat="${state.id}">
+                        <button type="button" data-value="none" class="custom-cat-btn px-2 md:px-4 py-2 md:py-2.5 text-xs md:text-base">НЕТ</button>
+                        <button type="button" data-value="mild" class="custom-cat-btn px-2 md:px-4 py-2 md:py-2.5 text-xs md:text-base">ЛЕГКОЕ</button>
+                        <button type="button" data-value="moderate" class="custom-cat-btn px-2 md:px-4 py-2 md:py-2.5 text-xs md:text-base">УМЕРЕННОЕ</button>
+                        <button type="button" data-value="severe" class="custom-cat-btn px-2 md:px-4 py-2 md:py-2.5 text-xs md:text-base">ТЯЖЕЛОЕ</button>
                     </div>
                     <input type="hidden" id="custom_state_cat_input_${state.id}" name="custom_state_${state.id}" value="">
                 `;
@@ -1201,30 +1195,6 @@ function updateCustomStatesList() {
                 <div class="flex items-center gap-3">
                     <div class="flex-1">
                         ${inputHtml}
-                    </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <button 
-                            type="button" 
-                            onclick="editCustomState(${state.id})" 
-                            class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 flex items-center gap-1.5 px-2 py-1"
-                            title="Редактировать"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                            <span>Изменить</span>
-                        </button>
-                        <button 
-                            type="button" 
-                            onclick="deleteCustomState(${state.id})" 
-                            class="text-sm text-red-500 dark:text-red-400 hover:text-red-600 dark:hover:text-red-300 flex items-center gap-1.5 px-2 py-1"
-                            title="Удалить"
-                        >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a1 1 0 00-1 1v1h6V4a1 1 0 00-1-1m-4 0h4"></path>
-                            </svg>
-                            <span>Удалить</span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1708,6 +1678,11 @@ async function deleteMedication(medId) {
             });
             updateMedicationsList();
             StabilUtils.showMessage('Лекарство удалено', 'success');
+            
+            // Если мы на странице редактирования, перезагружаем страницу
+            if (window.location.pathname === '/edit_medications') {
+                window.location.reload();
+            }
         } else {
             StabilUtils.showMessage(result.message || 'Ошибка при удалении лекарства', 'error');
         }
@@ -1871,6 +1846,11 @@ async function saveCustomState() {
             
             // Полностью пересоздаем список (костыль удаляет все старые элементы)
             updateCustomStatesList();
+            
+            // Если мы на странице редактирования, перезагружаем страницу
+            if (window.location.pathname === '/edit_medications') {
+                window.location.reload();
+            }
         } else {
             StabilUtils.showMessage(result.message || 'Ошибка при сохранении состояния', 'error');
         }
@@ -1912,6 +1892,11 @@ async function deleteCustomState(stateId) {
             });
             updateCustomStatesList();
             StabilUtils.showMessage('Состояние удалено', 'success');
+            
+            // Если мы на странице редактирования, перезагружаем страницу
+            if (window.location.pathname === '/edit_medications') {
+                window.location.reload();
+            }
         } else {
             StabilUtils.showMessage(result.message || 'Ошибка при удалении состояния', 'error');
         }
@@ -2381,6 +2366,92 @@ async function determineDayType() {
     }
 }
 
+/**
+ * Открытие модального окна для изменения дозировки лекарства на сегодня
+ */
+function editMedicationDose(medId, currentDose) {
+    editingMedicationDoseId = medId;
+    const doseInput = document.getElementById('edit-medication-dose');
+    if (doseInput) {
+        doseInput.value = currentDose || '';
+    }
+    const modal = document.getElementById('editMedicationDoseModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        doseInput?.focus();
+    }
+}
+
+/**
+ * Закрытие модального окна для изменения дозировки
+ */
+function closeEditMedicationDoseModal() {
+    const modal = document.getElementById('editMedicationDoseModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    editingMedicationDoseId = null;
+    const doseInput = document.getElementById('edit-medication-dose');
+    if (doseInput) {
+        doseInput.value = '';
+    }
+}
+
+/**
+ * Сохранение измененной дозировки лекарства на сегодня
+ */
+async function saveMedicationDose() {
+    if (!editingMedicationDoseId) return;
+    
+    const doseInput = document.getElementById('edit-medication-dose');
+    if (!doseInput) return;
+    
+    const newDose = parseFloat(doseInput.value);
+    if (isNaN(newDose) || newDose < 0) {
+        StabilUtils.showMessage('Введите корректную дозировку', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/update_medication_dose', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                med_id: editingMedicationDoseId,
+                date: selectedDate,
+                dosage_mg: newDose
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            StabilUtils.showMessage('Дозировка изменена', 'success');
+            closeEditMedicationDoseModal();
+            
+            // Обновляем отображение лекарств
+            const med = medications.find(m => {
+                const mId = typeof m.id === 'number' ? m.id : parseInt(m.id);
+                const searchId = typeof editingMedicationDoseId === 'number' ? editingMedicationDoseId : parseInt(editingMedicationDoseId);
+                return mId === searchId;
+            });
+            
+            if (med) {
+                med.dosage_mg = newDose;
+                updateMedicationsList();
+            }
+        } else {
+            StabilUtils.showMessage(result.message || 'Ошибка при изменении дозировки', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка изменения дозировки:', error);
+        StabilUtils.showMessage('Ошибка при изменении дозировки', 'error');
+    }
+}
+
 // Горячие клавиши для модалок
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -2389,6 +2460,9 @@ document.addEventListener('keydown', function(e) {
         }
         if (!document.getElementById('addCustomStateModal').classList.contains('hidden')) {
             closeAddCustomStateModal();
+        }
+        if (!document.getElementById('editMedicationDoseModal').classList.contains('hidden')) {
+            closeEditMedicationDoseModal();
         }
         if (!document.getElementById('notes-fullscreen-modal').classList.contains('hidden')) {
             document.getElementById('notes-fullscreen-modal').classList.add('hidden');

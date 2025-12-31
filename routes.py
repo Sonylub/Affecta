@@ -300,6 +300,21 @@ def psychoeducation():
     """Страница психообразования"""
     return render_template('psychoeducation.html')
 
+@bp.route('/settings')
+@login_required
+def settings():
+    """Страница настроек"""
+    return render_template('settings.html')
+
+@bp.route('/edit_medications')
+@login_required
+def edit_medications():
+    """Страница редактирования лекарств и состояний"""
+    db = get_db()
+    medications = db.get_user_medications(current_user.id)
+    custom_states = db.get_user_custom_states(current_user.id)
+    return render_template('edit_medications.html', medications=medications, custom_states=custom_states)
+
 @bp.route('/save_entry', methods=['POST'])
 @login_required
 @api_route
@@ -561,6 +576,32 @@ def update_medication():
             'frequency': frequency
         }
     }
+
+@bp.route('/update_medication_dose', methods=['POST'])
+@login_required
+@api_route
+def update_medication_dose():
+    """Обновление дозировки лекарства на конкретную дату (пока обновляем общую дозировку)"""
+    db = get_db()
+    data = request.json
+    
+    med_id = data.get('med_id')
+    dosage_mg = data.get('dosage_mg')
+    
+    if not med_id:
+        raise ValueError('Не указан идентификатор лекарства')
+    
+    # Получаем лекарство для проверки принадлежности
+    medications = db.get_user_medications(current_user.id)
+    med = next((m for m in medications if m['id'] == med_id), None)
+    
+    if not med:
+        raise ValueError('Лекарство не найдено')
+    
+    # Обновляем общую дозировку лекарства
+    db.update_medication(med_id, current_user.id, med['name'], dosage_mg, med.get('time_of_day'), med.get('frequency'))
+    
+    return {'success': True}
 
 @bp.route('/delete_medication', methods=['POST'])
 @login_required
