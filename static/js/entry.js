@@ -1393,7 +1393,7 @@ function setCustomStateValue(stateId, value) {
 /**
  * Сбор данных формы (оптимизированная версия)
  */
-function collectFormData() {
+function collectFormData(determineDayType = false) {
     const form = document.getElementById('entryForm');
     if (!form) return null;
     
@@ -1445,6 +1445,11 @@ function collectFormData() {
         data.day_type = manualDayType;
     }
     
+    // Добавляем флаг для определения типа дня
+    if (determineDayType) {
+        data.determine_day_type = true;
+    }
+    
     // Лекарства (оптимизированный сбор через прямые селекторы)
     medications.forEach(med => {
         const checkbox = form.querySelector(`[name="medication_check_${med.id}"]`);
@@ -1481,8 +1486,8 @@ function collectFormData() {
 /**
  * Сохранение записи
  */
-async function saveEntry(showMessage = true) {
-    const data = collectFormData();
+async function saveEntry(showMessage = true, determineDayType = false) {
+    const data = collectFormData(determineDayType);
     if (!data) {
         if (showMessage) {
             StabilUtils.showMessage('Не удалось собрать данные формы', 'error');
@@ -1507,8 +1512,10 @@ async function saveEntry(showMessage = true) {
                 StabilUtils.showMessage('Запись сохранена успешно!', 'success');
             }
 
-            // Обновляем блок типа дня по ответу сервера (если он есть)
-            updateDayTypeUI(result.day_type, result.day_type_explanation);
+            // Обновляем блок типа дня только если он был определен (не null)
+            if (result.day_type !== null && result.day_type !== undefined) {
+                updateDayTypeUI(result.day_type, result.day_type_explanation);
+            }
             
             // Очищаем черновик заметок после успешного сохранения
             if (typeof clearNotesDraft === 'function') {
@@ -2223,10 +2230,8 @@ function initializeAutoSave() {
                 showStatus('✓ Сохранено', true);
                 resetStatus();
                 
-                // Обновляем блок типа дня по ответу сервера (если он есть)
-                if (result.day_type !== undefined) {
-                    updateDayTypeUI(result.day_type, result.day_type_explanation);
-                }
+                // Не обновляем тип дня при автосохранении - только при явном запросе
+                // Тип дня будет обновляться только при нажатии кнопки "Определить тип дня"
                 
                 // Очищаем черновик заметок после успешного сохранения
                 if (typeof clearNotesDraft === 'function') {
@@ -2349,10 +2354,14 @@ async function determineDayType() {
     btn.textContent = 'Определение...';
     
     try {
-        // Сохраняем запись, чтобы получить тип дня
-        const result = await saveEntry(false);
+        // Сохраняем запись с флагом для определения типа дня
+        const result = await saveEntry(false, true);
         
         if (result && result.success) {
+            // Обновляем UI типа дня после определения
+            if (result.day_type !== null && result.day_type !== undefined) {
+                updateDayTypeUI(result.day_type, result.day_type_explanation);
+            }
             StabilUtils.showMessage('Тип дня определен', 'success');
         } else {
             StabilUtils.showMessage(result?.error || 'Ошибка при определении типа дня', 'error');

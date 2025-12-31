@@ -34,8 +34,11 @@
             const theme = getInitialTheme();
             if (theme === 'dark') {
                 document.documentElement.classList.add(DARK_CLASS);
+                // КОСТЫЛЬ: Принудительно устанавливаем темный фон
+                document.documentElement.style.setProperty('--forced-bg', '#111827');
             } else {
                 document.documentElement.classList.remove(DARK_CLASS);
+                document.documentElement.style.setProperty('--forced-bg', '#F8FAFC');
             }
         })();
     </script>
@@ -46,7 +49,98 @@
         tailwind.config = {
             darkMode: 'class',
         }
+        
+        // КОСТЫЛЬ: Скрипт для принудительного исправления цветов
+        (function() {
+            function fixThemeColors() {
+                const isDark = document.documentElement.classList.contains('dark');
+                
+                // Исправляем body
+                if (isDark) {
+                    document.body.style.setProperty('background-color', '#111827', 'important');
+                    document.body.style.setProperty('color', '#f3f4f6', 'important');
+                } else {
+                    document.body.style.setProperty('background-color', '#F8FAFC', 'important');
+                    document.body.style.setProperty('color', '#1f2937', 'important');
+                }
+                
+                // Исправляем main
+                const mainElements = document.querySelectorAll('main');
+                mainElements.forEach(main => {
+                    main.style.setProperty('background-color', 'transparent', 'important');
+                });
+                
+                // Исправляем белые блоки, которые должны быть белыми в светлой теме
+                // и темными в темной теме
+                const bgWhiteElements = document.querySelectorAll('.bg-white');
+                bgWhiteElements.forEach(el => {
+                    if (isDark) {
+                        // В темной теме bg-white элементы должны стать темными
+                        // Проверяем, есть ли у них класс dark:bg-gray-800 или подобный
+                        if (el.classList.contains('dark:bg-gray-800') || 
+                            el.classList.contains('dark:bg-gray-700') || 
+                            el.classList.contains('dark:bg-gray-900')) {
+                            // Если есть tailwind класс для темной темы, но он не сработал - форсируем
+                            // Но лучше просто дать tailwind работать, если мы не мешаем
+                            // Наша проблема была в том, что мы мешали
+                        } else {
+                             // Если нет специфичного класса для темной темы, но это bg-white компонент
+                             // возможно стоит его затемнить? Нет, это опасно.
+                        }
+                    } else {
+                        // В СВЕТЛОЙ ТЕМЕ
+                        // Принудительно возвращаем белый цвет
+                        el.style.setProperty('background-color', '#ffffff', 'important');
+                        el.style.removeProperty('color'); // Возвращаем дефолтный цвет текста
+                    }
+                });
+                
+                // Исправляем текстовые элементы в светлой теме
+                if (!isDark) {
+                    const textElements = document.querySelectorAll('.text-gray-300, .text-gray-400, .text-white');
+                    textElements.forEach(el => {
+                        // Если элемент имеет класс темной темы, но мы в светлой - сбрасываем inline стили если были
+                        el.style.removeProperty('color');
+                    });
+                }
+            }
+            
+            // Запускаем исправление
+            window.addEventListener('load', fixThemeColors);
+            
+            // Следим за изменением класса dark
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        setTimeout(fixThemeColors, 0);
+                        setTimeout(fixThemeColors, 50);
+                    }
+                });
+            });
+            
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        })();
     </script>
+    
+    <!-- КОСТЫЛЬ: Принудительные стили для темы -->
+    <style id="forced-theme-styles">
+        html.dark body {
+            background-color: #111827 !important;
+            background: #111827 !important;
+        }
+        html:not(.dark) body {
+            background-color: #F8FAFC !important;
+            background: #F8FAFC !important;
+        }
+        html.dark main,
+        html:not(.dark) main {
+            background-color: transparent !important;
+            background: transparent !important;
+        }
+    </style>
     
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -70,8 +164,54 @@
     
     <!-- iOS Splash Screens -->
     <link rel="apple-touch-startup-image" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    
+    <!-- КОСТЫЛЬ: Принудительное применение фона после загрузки -->
+    <script>
+        (function() {
+            function forceThemeBackground() {
+                const isDark = document.documentElement.classList.contains('dark');
+                const bgColor = isDark ? '#111827' : '#F8FAFC';
+                
+                // Принудительно устанавливаем фон body
+                document.body.style.setProperty('background-color', bgColor, 'important');
+                document.body.style.setProperty('background', bgColor, 'important');
+                
+                // Принудительно устанавливаем прозрачный фон для main
+                const mainElements = document.querySelectorAll('main');
+                mainElements.forEach(main => {
+                    main.style.setProperty('background-color', 'transparent', 'important');
+                    main.style.setProperty('background', 'transparent', 'important');
+                });
+            }
+            
+            // Применяем сразу
+            forceThemeBackground();
+            
+            // Применяем после загрузки DOM
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', forceThemeBackground);
+            }
+            
+            // Применяем после полной загрузки
+            window.addEventListener('load', forceThemeBackground);
+            
+            // Отслеживаем изменения класса dark
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        forceThemeBackground();
+                    }
+                });
+            });
+            
+            observer.observe(document.documentElement, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+        })();
+    </script>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200" style="background-color: var(--forced-bg, #F8FAFC) !important;">
     <!-- Навигация -->
     <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 md:fixed md:top-0 md:left-0 md:right-0 md:z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -173,7 +313,7 @@
     {% endwith %}
 
     <!-- Основной контент -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 md:pt-24">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-20 md:pb-8 md:pt-24" style="background-color: transparent !important;">
         {% block content %}{% endblock %}
     </main>
 

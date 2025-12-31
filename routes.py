@@ -348,13 +348,18 @@ def save_entry():
 
     # Проверяем, указан ли тип дня вручную пользователем
     manual_day_type = data.get('day_type')
+    # Проверяем, нужно ли определять тип дня автоматически
+    determine_day_type = data.get('determine_day_type', False)
+    
+    day_type = None
+    explanation = []
     
     if manual_day_type and manual_day_type in ['normal', 'depressive', 'hypomanic', 'mixed']:
         # Используем пользовательский тип дня
         day_type = manual_day_type
         explanation = []
-    else:
-        # Автоматическое определение типа дня
+    elif determine_day_type:
+        # Автоматическое определение типа дня (только при явном запросе)
         analysis_start = entry_date - timedelta(days=6)
         recent_entries = db.get_entries_period(current_user.id, analysis_start, entry_date)
         
@@ -368,8 +373,16 @@ def save_entry():
             recent_entries=recent_entries
         )
         day_type, explanation = analyzer.determine_phase()
+    else:
+        # Не определяем тип дня автоматически - оставляем существующий
+        existing_entry = db.get_entry(current_user.id, entry_date)
+        if existing_entry and existing_entry.get('day_type'):
+            day_type = existing_entry.get('day_type')
+        # Если тип дня не был определен ранее, не устанавливаем его
 
-    db.update_day_type(entry_id, day_type)
+    # Обновляем тип дня только если он был определен или указан вручную
+    if day_type:
+        db.update_day_type(entry_id, day_type)
     
     for med_id, taken in data.get('medications', {}).items():
         db.add_medication_intake(entry_id, int(med_id), 'full' if taken else 'none')

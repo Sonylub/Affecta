@@ -37,8 +37,29 @@
         
         if (theme === 'dark') {
             root.classList.add(DARK_CLASS);
+            // КОСТЫЛЬ: Принудительно устанавливаем темный фон с !important
+            root.style.setProperty('--forced-bg', '#111827');
+            document.body.style.setProperty('background-color', '#111827', 'important');
+            document.body.style.setProperty('background', '#111827', 'important');
+            
+            // Принудительно устанавливаем прозрачный фон для main
+            const mainElements = document.querySelectorAll('main');
+            mainElements.forEach(main => {
+                main.style.setProperty('background-color', 'transparent', 'important');
+                main.style.setProperty('background', 'transparent', 'important');
+            });
         } else {
             root.classList.remove(DARK_CLASS);
+            root.style.setProperty('--forced-bg', '#F8FAFC');
+            document.body.style.setProperty('background-color', '#F8FAFC', 'important');
+            document.body.style.setProperty('background', '#F8FAFC', 'important');
+            
+            // Принудительно устанавливаем прозрачный фон для main
+            const mainElements = document.querySelectorAll('main');
+            mainElements.forEach(main => {
+                main.style.setProperty('background-color', 'transparent', 'important');
+                main.style.setProperty('background', 'transparent', 'important');
+            });
         }
         
         updateThemeIcon(theme);
@@ -51,6 +72,8 @@
     function updateThemeIcon(theme) {
         const lightIcon = document.getElementById('theme-toggle-light-icon');
         const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        const lightIconMobile = document.getElementById('theme-toggle-light-icon-mobile');
+        const darkIconMobile = document.getElementById('theme-toggle-dark-icon-mobile');
         
         if (lightIcon && darkIcon) {
             if (theme === 'dark') {
@@ -59,6 +82,17 @@
             } else {
                 lightIcon.classList.remove('hidden');
                 darkIcon.classList.add('hidden');
+            }
+        }
+        
+        // Обновляем мобильные иконки
+        if (lightIconMobile && darkIconMobile) {
+            if (theme === 'dark') {
+                lightIconMobile.classList.add('hidden');
+                darkIconMobile.classList.remove('hidden');
+            } else {
+                lightIconMobile.classList.remove('hidden');
+                darkIconMobile.classList.add('hidden');
             }
         }
     }
@@ -184,9 +218,15 @@
      */
     function initThemeToggle() {
         const toggleButton = document.getElementById('theme-toggle');
+        const toggleButtonMobile = document.getElementById('theme-toggle-mobile');
         
         if (toggleButton) {
             toggleButton.addEventListener('click', toggleTheme);
+        }
+        
+        // Обработчик для мобильного переключателя
+        if (toggleButtonMobile) {
+            toggleButtonMobile.addEventListener('click', toggleTheme);
         }
     }
 
